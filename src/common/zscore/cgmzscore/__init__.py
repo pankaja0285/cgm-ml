@@ -1,2 +1,2 @@
-from .cgmzscore import Calculator
-from .cgmzscore import Chart
+from .cgmzscore import Calculator  # noqa: F401
+from .cgmzscore import Chart  # noqa: F401

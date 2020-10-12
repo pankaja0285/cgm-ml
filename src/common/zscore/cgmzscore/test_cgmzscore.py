@@ -1,26 +1,29 @@
 '''
 # Test case from data provide in survey of https://www.who.int/childgrowth/software/
 '''
-import pytest
-from cgmzscore import Calculator
-import pandas as pd
 import os
+
+import pandas as pd
+
+from cgmzscore import Calculator
 
 module_dir = str(os.path.split(os.path.abspath(__file__))[0])
 
 
-df = pd.read_csv(module_dir+'/test_data/test_data.csv')
+df = pd.read_csv(module_dir + '/test_data/test_data.csv')
 
 # 1 for male
 # 2 for female
 
-def check_null(i,df):
-    return pd.isnull(df.loc[i, 'WEIGHT']) or pd.isnull(df.loc[i, '_agedays']) or pd.isnull(df.loc[i, '_ZWEI']) or df.loc[i, '_agedays'] == 0 or pd.isnull(df.loc[i, '_ZLEN']) or pd.isnull(df.loc[i, '_ZWFL'])
+
+def check_null(i, df):
+    return pd.isnull(df.loc[i, 'WEIGHT']) or pd.isnull(df.loc[i, '_agedays']) or pd.isnull(
+        df.loc[i, '_ZWEI']) or df.loc[i, '_agedays'] == 0 or pd.isnull(df.loc[i, '_ZLEN']) or pd.isnull(df.loc[i, '_ZWFL'])
 
 
 def test_zScore_wfa():
     for i in range(len(df)):
-        if check_null(i,df):
+        if check_null(i, df):
             continue
 
         sex = 'M' if df['GENDER'][i] == 1 else 'F'
@@ -34,7 +37,7 @@ def test_zScore_wfa():
 
 def test_zScore_lhfa():
     for i in range(len(df)):
-        if check_null(i,df):
+        if check_null(i, df):
             continue
 
         sex = 'M' if df['GENDER'][i] == 1 else 'F'
@@ -52,7 +55,7 @@ def test_zScore_lhfa():
 
 def test_zScore_wfh():
     for i in range(len(df)):
-        if check_null(i,df):
+        if check_null(i, df):
             continue
 
         sex = 'M' if df['GENDER'][i] == 1 else 'F'
@@ -69,7 +72,7 @@ def test_zScore_wfh():
 
 def test_zScore_wfl():
     for i in range(len(df)):
-        if check_null(i,df):
+        if check_null(i, df):
             continue
 
         sex = 'M' if df['GENDER'][i] == 1 else 'F'
