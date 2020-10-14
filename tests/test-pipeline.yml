@@ -38,7 +38,7 @@
       displayName: 'Azure Login'
     
     - bash: |
-        cd tests
+        cd tests/QA
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate CGM_QA_Pipeline
@@ -46,7 +46,7 @@
       displayName: 'Saving Workspace Config'
 
     - bash: |
-        cd tests/eval-sklearn-model-rmse
+        cd tests/QA/eval-sklearn-model-rmse
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate CGM_QA_Pipeline
@@ -55,7 +55,7 @@
       displayName: 'Sklean Model RMSE Evaluation'
 
     - bash: |
-        cd tests/eval-depthmap-plaincnn-height
+        cd tests/QA/eval-depthmap-plaincnn-height
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate CGM_QA_Pipeline
