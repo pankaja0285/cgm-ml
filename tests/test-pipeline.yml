@@ -52,7 +52,7 @@
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
         papermill eval_notebook.ipynb sklearn-model_output.ipynb --log-output --no-progress-bar -k python3
-        jupyter notebook --to html sklearn-model_output.ipynb
+        jupyter nbconvert --to html sklearn-model_output.ipynb
         ls -l
       displayName: 'Sklean Model RMSE Evaluation'
 
@@ -63,7 +63,7 @@
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
         papermill eval_notebook.ipynb depthmap-plaincnn-height_output.ipynb --log-output --no-progress-bar -k python3
-        jupyter notebook --to html depthmap-plaincnn-height_output.ipynb
+        jupyter nbconvert --to html depthmap-plaincnn-height_output.ipynb
         ls -l
       displayName: 'Depthmap PlainCNN Height Model Evaluation'
 
@@ -73,6 +73,7 @@
         Contents: |
           tests/QA/eval-sklearn-model-rmse/sklearn-model_output.html
           tests/QA/eval-depthmap-plaincnn-height/depthmap-plaincnn-height_output.html
+          tests/QA/eval-depthmap-plaincnn-height/result2.csv
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
       displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
 
