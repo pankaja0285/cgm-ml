@@ -67,7 +67,7 @@
 
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Pipeline.Workspace)'/tests/QA/eval-depthmap-plaincnn-height/eval_notebook_output.ipynb
+        targetPath: '$(Pipeline.Workspace)/tests/QA/eval-depthmap-plaincnn-height/eval_notebook_output.ipynb'
         artifact: 'Output Notebook'
         publishLocation: 'pipeline'
 
