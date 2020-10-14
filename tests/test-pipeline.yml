@@ -18,7 +18,7 @@
 
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Pipeline.Workspace)/cgm-ml/tests/QA/eval-depthmap-plaincnn-height/eval_notebook.ipynb'
+        targetPath: '$(Build.SourcesDirectory)/tests/QA/eval-depthmap-plaincnn-height/eval_notebook.ipynb'
         artifact: 'Output Notebook'
         publishLocation: 'pipeline'
 
