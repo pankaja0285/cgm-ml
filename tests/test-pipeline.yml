@@ -52,6 +52,7 @@
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
         papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+        ls -l
       displayName: 'Sklean Model RMSE Evaluation'
 
     - bash: |
@@ -61,7 +62,14 @@
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
         papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+        ls -l
       displayName: 'Depthmap PlainCNN Height Model Evaluation'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)'/tests/QA/eval-depthmap-plaincnn-height/eval_notebook_output.ipynb
+        artifact: 'Output Notebook'
+        publishLocation: 'pipeline'
 
     - bash: |
         az logout
