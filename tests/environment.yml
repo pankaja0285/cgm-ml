@@ -1,4 +1,4 @@
-name: CGMEvaluationPipeline
+name: CGM_QA_Pipeline
 channels:
   - conda-forge
 dependencies:

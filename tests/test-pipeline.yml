@@ -13,8 +13,8 @@
       vmImage: 'Ubuntu-20.04'
 
     steps:
-    - script: echo Hello, Test Pipeline!
-      displayName: 'TestPipeline for cgm-ml-service'
+    - script: echo Hello, QA Pipeline!
+      displayName: 'QA Pipeline for cgm-ml-service'
     
     - bash: |
         cd tests
@@ -24,7 +24,7 @@
         conda env create -f environment.yml
         conda env list
         jupyter kernelspec list
-        conda activate CGMEvaluationPipeline
+        conda activate CGM_QA_Pipeline
         conda list
         conda list | grep nbconvert
         conda list | grep papermill
@@ -41,19 +41,28 @@
         cd tests
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
-        conda activate CGMEvaluationPipeline
+        conda activate CGM_QA_Pipeline
         python auth.py -sid $(subscriptionid) -rg $(RESOURCE_GROUP) -wn $(WORKSPACE_NAME)
       displayName: 'Saving Workspace Config'
 
     - bash: |
-        cd tests
+        cd tests/eval-sklearn-model-rmse
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
-        conda activate CGMEvaluationPipeline
-        echo Executing evaluation.ipynb
-        papermill evaluation.ipynb evaluation_Output.ipynb --log-output --no-progress-bar -k python3
-      displayName: 'Run Evaluation'
-  
+        conda activate CGM_QA_Pipeline
+        echo Executing eval_notebook.ipynb
+        papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+      displayName: 'Sklean Model RMSE Evaluation'
+
+    - bash: |
+        cd tests/eval-depthmap-plaincnn-height
+        ls -l
+        source /usr/share/miniconda/etc/profile.d/conda.sh
+        conda activate CGM_QA_Pipeline
+        echo Executing eval_notebook.ipynb
+        papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+      displayName: 'Depthmap PlainCNN Height Model Evaluation'
+
     - bash: |
         az logout
       displayName: 'Azure Logout'
