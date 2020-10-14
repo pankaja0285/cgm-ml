@@ -15,7 +15,13 @@
     steps:
     - script: echo Hello, QA Pipeline!
       displayName: 'QA Pipeline for cgm-ml-service'
-    
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/cgm-ml/tests/QA/eval-depthmap-plaincnn-height/eval_notebook.ipynb'
+        artifact: 'Output Notebook'
+        publishLocation: 'pipeline'
+
     - bash: |
         cd tests
         ls -l
@@ -65,11 +71,6 @@
         ls -l
       displayName: 'Depthmap PlainCNN Height Model Evaluation'
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/tests/QA/eval-depthmap-plaincnn-height/eval_notebook_output.ipynb'
-        artifact: 'Output Notebook'
-        publishLocation: 'pipeline'
 
     - bash: |
         az logout
