@@ -19,7 +19,7 @@ CONFIG = dotdict(dict(
 
     FAST_RUN = True,
     SMALL_EVAL_SIZE = 20,
-    CSV_OUT_PATH = 'result2.csv',
+    CSV_OUT_PATH = './outputs/result2.csv',
 
     
     # Parameters for dataset generation.
