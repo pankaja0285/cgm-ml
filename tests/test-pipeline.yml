@@ -16,12 +16,6 @@
     - script: echo Hello, QA Pipeline!
       displayName: 'QA Pipeline for cgm-ml-service'
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.SourcesDirectory)/tests/QA/eval-depthmap-plaincnn-height/eval_notebook.ipynb'
-        artifact: 'Output Notebook'
-        publishLocation: 'pipeline'
-
     - bash: |
         cd tests
         ls -l
@@ -57,7 +51,8 @@
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
-        papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+        papermill eval_notebook.ipynb sklearn-model_output.ipynb --log-output --no-progress-bar -k python3
+        jupyter notebook --to html sklearn-model_output.ipynb
         ls -l
       displayName: 'Sklean Model RMSE Evaluation'
 
@@ -67,10 +62,26 @@
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate CGM_QA_Pipeline
         echo Executing eval_notebook.ipynb
-        papermill eval_notebook.ipynb eval_notebook_output.ipynb --log-output --no-progress-bar -k python3
+        papermill eval_notebook.ipynb depthmap-plaincnn-height_output.ipynb --log-output --no-progress-bar -k python3
+        jupyter notebook --to html depthmap-plaincnn-height_output.ipynb
         ls -l
       displayName: 'Depthmap PlainCNN Height Model Evaluation'
 
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          tests/QA/eval-sklearn-model-rmse/sklearn-model_output.html
+          tests/QA/eval-depthmap-plaincnn-height/depthmap-plaincnn-height_output.html
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifact: 'Output Notebook'
+        publishLocation: 'pipeline'
+      displayName: 'Publish Results and Output Notebook'
 
     - bash: |
         az logout
