@@ -46,17 +46,6 @@
       displayName: 'Saving Workspace Config'
 
     - bash: |
-        cd tests/QA/eval-sklearn-model-rmse
-        ls -l
-        source /usr/share/miniconda/etc/profile.d/conda.sh
-        conda activate CGM_QA_Pipeline
-        echo Executing eval_notebook.ipynb
-        papermill eval_notebook.ipynb sklearn-model_output.ipynb --log-output --no-progress-bar -k python3
-        jupyter nbconvert --to html sklearn-model_output.ipynb
-        ls -l
-      displayName: 'Sklean Model RMSE Evaluation'
-
-    - bash: |
         cd tests/QA/eval-depthmap-plaincnn-height
         ls -l
         source /usr/share/miniconda/etc/profile.d/conda.sh
@@ -71,9 +60,8 @@
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)'
         Contents: |
-          tests/QA/eval-sklearn-model-rmse/sklearn-model_output.html
           tests/QA/eval-depthmap-plaincnn-height/depthmap-plaincnn-height_output.html
-          tests/QA/eval-depthmap-plaincnn-height/result2.csv
+          tests/QA/eval-depthmap-plaincnn-height/*.csv
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
       displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
 
