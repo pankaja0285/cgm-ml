@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import random
 from typing import List
@@ -8,11 +9,11 @@ from azureml.core import Experiment, Workspace
 from azureml.core.run import Run
 from tensorflow.keras import callbacks, layers, models
 
-from config import CONFIG
-from constants import REPO_DIR
+from config import CONFIG, DATASET_MODE_DOWNLOAD, DATASET_MODE_MOUNT
+from constants import DATA_DIR_ONLINE_RUN, REPO_DIR
 from model import create_base_cnn, create_head, load_base_cgm_model
 from preprocessing import create_multiartifact_paths, tf_load_pickle, tf_augment_sample
-
+from utils import download_dataset, get_dataset_path
 
 # Make experiment reproducible
 tf.random.set_seed(CONFIG.SPLIT_SEED)
@@ -20,6 +21,10 @@ random.seed(CONFIG.SPLIT_SEED)
 
 # Get the current run.
 run = Run.get_context()
+
+DATA_DIR = REPO_DIR / 'data' if run.id.startswith("OfflineRun") else Path(DATA_DIR_ONLINE_RUN)
+print(f"DATA_DIR: {DATA_DIR}")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Offline run. Download the sample dataset and run locally. Still push results to Azure.
 if(run.id.startswith("OfflineRun")):
@@ -31,20 +36,26 @@ if(run.id.startswith("OfflineRun")):
     experiment = Experiment(workspace, "training-junkyard")
     run = experiment.start_logging(outputs=None, snapshot_directory=None)
 
-    # Get dataset.
-    print("Accessing dataset...")
     dataset_name = "anon-depthmap-mini"
-    dataset_path = str(REPO_DIR / "data" / dataset_name)
-    if not os.path.exists(dataset_path):
-        dataset = workspace.datasets[dataset_name]
-        dataset.download(target_path=dataset_path, overwrite=False)
+    dataset_path = get_dataset_path(DATA_DIR, dataset_name)
+    download_dataset(workspace, dataset_name, dataset_path)
 
 # Online run. Use dataset provided by training notebook.
 else:
     print("Running in online mode...")
     experiment = run.experiment
     workspace = experiment.workspace
-    dataset_path = run.input_datasets["dataset"]
+
+    dataset_name = CONFIG.DATASET_NAME
+
+    # Mount or download
+    if CONFIG.DATASET_MODE == DATASET_MODE_MOUNT:
+        dataset_path = run.input_datasets["dataset"]
+    elif CONFIG.DATASET_MODE == DATASET_MODE_DOWNLOAD:
+        dataset_path = get_dataset_path(DATA_DIR, dataset_name)
+        download_dataset(workspace, dataset_name, dataset_path)
+    else:
+        raise NameError(f"Unknown DATASET_MODE: {CONFIG.DATASET_MODE}")
 
 # Get the QR-code paths.
 dataset_scans_path = os.path.join(dataset_path, "scans")
@@ -147,7 +158,7 @@ def download_pretrained_model(output_model_fpath):
 
 def get_base_model():
     if CONFIG.PRETRAINED_RUN:
-        model_fpath = REPO_DIR / "data/pretrained/" / CONFIG.PRETRAINED_RUN / "best_model.h5"
+        model_fpath = DATA_DIR / "pretrained/" / CONFIG.PRETRAINED_RUN / "best_model.h5"
         if not os.path.exists(model_fpath):
             download_pretrained_model(model_fpath)
         print(f"Loading pretrained model from {model_fpath}")
@@ -215,7 +226,7 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(
 training_callbacks.append(tensorboard_callback)
 
 # Add checkpoint callback.
-best_model_path = str(REPO_DIR / 'data/outputs/best_model.h5')
+best_model_path = str(DATA_DIR / 'outputs/best_model.h5')
 checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=best_model_path,
     monitor="val_loss",
