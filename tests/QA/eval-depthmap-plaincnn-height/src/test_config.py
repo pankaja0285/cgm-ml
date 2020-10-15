@@ -8,7 +8,10 @@ class dotdict(dict):
 #Details of model used for evaluation
 MODEL_CONFIG = dotdict(dict(
     EXPERIMENT_NAME = 'q3-depthmap-plaincnn-height-95k',
-    RUN_ID = 'q3-depthmap-plaincnn-height-95k_1600451633_cb44f6db',
+    
+    #RUN_ID = 'q3-depthmap-plaincnn-height-95k_1597988908_42c4ef33',    #Run 3
+    RUN_ID = 'q3-depthmap-plaincnn-height-95k_1600451633_cb44f6db',     #Run 17
+    
     INPUT_LOCATION = 'outputs',
     NAME = 'best_model.h5',
 ))
@@ -23,7 +26,8 @@ EVAL_CONFIG = dotdict(dict(
     CLUSTER_NAME = "gpu-cluster",
 
     #Used for Debug the QA pipeline
-    DEBUG_RUN = True,
+    DEBUG_RUN = False,
+    #DEBUG_RUN = True,
 
     #Will run eval on specified # of scan instead of full dataset
     DEBUG_NUMBER_OF_SCAN = 50,
