@@ -4,7 +4,7 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
-
+'''
 CONFIG = dotdict(dict(
     SPLIT_SEED=0,
     IMAGE_TARGET_HEIGHT=240,
@@ -25,3 +25,4 @@ CONFIG = dotdict(dict(
     # Parameters for dataset generation.
     TARGET_INDEXES=[0]  # 0 is height, 1 is weight.
 ))
+'''

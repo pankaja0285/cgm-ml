@@ -3,8 +3,7 @@ import pandas as pd
 import glob2 as glob
 import pickle
 import numpy as np
-import constants
-from config import CONFIG
+from test_config import DATA_CONFIG, RESULT_CONFIG
 
 
 def preprocess_depthmap(depthmap):
@@ -31,7 +30,7 @@ def get_column_list(depthmap_path_list, prediction):
     
     for idx, path in enumerate(depthmap_path_list):
         _, targets = pickle.load(open(path, "rb"))
-        targets = preprocess_targets(targets, CONFIG.TARGET_INDEXES)
+        targets = preprocess_targets(targets, DATA_CONFIG.TARGET_INDEXES)
         target = np.squeeze(targets)
 
         sub_folder_list = path.split('/')
@@ -52,7 +51,7 @@ def avgerror(row):
 def calculate_performance(code, df_mae):
     df_mae_filtered = df_mae.iloc[df_mae.index.get_level_values('scantype') == code]
     accuracy_list = []
-    for acc in constants.EVALUATION_ACCURACIES:
+    for acc in RESULT_CONFIG.ACCURACIES:
         good_predictions = df_mae_filtered[(df_mae_filtered['error'] <= acc) & (df_mae_filtered['error'] >= -acc)]
         if len(df_mae_filtered):
             accuracy = len(good_predictions) / len(df_mae_filtered) * 100
@@ -62,7 +61,7 @@ def calculate_performance(code, df_mae):
         accuracy_list.append(accuracy)
     df_out = pd.DataFrame(accuracy_list)
     df_out = df_out.T
-    df_out.columns = constants.EVALUATION_ACCURACIES
+    df_out.columns = RESULT_CONFIG.ACCURACIES
     return df_out
 
 
@@ -71,9 +70,9 @@ def calculate_and_save_results(MAE, complete_name, CSV_OUT_PATH):
     ## Calculate accuracies across the scantypes
 
     dfs = []
-    for code in constants.CODE_TO_SCANTYPE.keys():
+    for code in DATA_CONFIG.CODE_TO_SCANTYPE.keys():
         df = calculate_performance(code, MAE)
-        full_model_name = complete_name + constants.CODE_TO_SCANTYPE[code]
+        full_model_name = complete_name + DATA_CONFIG.CODE_TO_SCANTYPE[code]
         df.rename(index={0:full_model_name}, inplace=True)
         #display(HTML(df.to_html()))
         dfs.append(df)

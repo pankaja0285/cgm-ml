@@ -9,11 +9,11 @@ from azureml.core import Experiment, Workspace
 from azureml.core.run import Run
 #from tensorflow.keras import callbacks
 
-from config import CONFIG
+from test_config import MODEL_CONFIG, EVAL_CONFIG, DATA_CONFIG, RESULT_CONFIG
 from constants import REPO_DIR
 from tensorflow.keras.models import load_model
 
-import constants
+#import constants
 import utils
 
 
@@ -23,18 +23,18 @@ def tf_load_pickle(path, max_value):
         depthmap, targets = pickle.load(open(path.numpy(), "rb"))
         depthmap = utils.preprocess_depthmap(depthmap)
         depthmap = depthmap / max_value
-        depthmap = tf.image.resize(depthmap, (CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH))
-        targets = utils.preprocess_targets(targets, CONFIG.TARGET_INDEXES)
+        depthmap = tf.image.resize(depthmap, (DATA_CONFIG.IMAGE_TARGET_HEIGHT, DATA_CONFIG.IMAGE_TARGET_WIDTH))
+        targets = utils.preprocess_targets(targets, DATA_CONFIG.TARGET_INDEXES)
         return depthmap, targets
 
     depthmap, targets = tf.py_function(py_load_pickle, [path, max_value], [tf.float32, tf.float32])
-    depthmap.set_shape((CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH, 1))
-    targets.set_shape((len(CONFIG.TARGET_INDEXES,)))
+    depthmap.set_shape((DATA_CONFIG.IMAGE_TARGET_HEIGHT, DATA_CONFIG.IMAGE_TARGET_WIDTH, 1))
+    targets.set_shape((len(DATA_CONFIG.TARGET_INDEXES,)))
     return depthmap, targets
 
 def get_height_prediction(MODEL_PATH, dataset_evaluation):
     model = load_model(MODEL_PATH)
-    predictions = model.predict(dataset_evaluation.batch(CONFIG.BATCH_SIZE))
+    predictions = model.predict(dataset_evaluation.batch(DATA_CONFIG.BATCH_SIZE))
     prediction_list = np.squeeze(predictions)
     return prediction_list
 
@@ -42,8 +42,8 @@ def get_height_prediction(MODEL_PATH, dataset_evaluation):
 if __name__ == "__main__":
 
     # Make experiment reproducible
-    tf.random.set_seed(CONFIG.SPLIT_SEED)
-    random.seed(CONFIG.SPLIT_SEED)
+    tf.random.set_seed(EVAL_CONFIG.SPLIT_SEED)
+    random.seed(EVAL_CONFIG.SPLIT_SEED)
 
     # Get the current run.
     run = Run.get_context()
@@ -55,12 +55,12 @@ if __name__ == "__main__":
         # Access workspace.
         print("Accessing workspace...")
         workspace = Workspace.from_config()
-        experiment = Experiment(workspace, CONFIG.EVAL_EXPERIMENT_NAME)
+        experiment = Experiment(workspace, EVAL_CONFIG.EXPERIMENT_NAME)
         run = experiment.start_logging(outputs=None, snapshot_directory=None)
 
         # Get dataset.
         print("Accessing dataset...")
-        dataset_name = CONFIG.EVAL_DATASET_NAME
+        dataset_name = DATA_CONFIG.NAME
         dataset_path = str(REPO_DIR / "data" / dataset_name)
         if not os.path.exists(dataset_path):
             dataset = workspace.datasets[dataset_name]
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     print("qrcode_paths: ", len(qrcode_paths))
     assert len(qrcode_paths) != 0
 
-    if CONFIG.FAST_RUN and len(qrcode_paths) > CONFIG.SMALL_EVAL_SIZE:
-        qrcode_paths = qrcode_paths[:CONFIG.SMALL_EVAL_SIZE]
-        print("Executing on {} qrcodes for FAST RUN".format(CONFIG.SMALL_EVAL_SIZE))
+    if EVAL_CONFIG.DEBUG_RUN and len(qrcode_paths) > EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN:
+        qrcode_paths = qrcode_paths[:EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN]
+        print("Executing on {} qrcodes for FAST RUN".format(EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN))
 
     print("Paths for evaluation:")
     print("\t" + "\n\t".join(qrcode_paths))
@@ -101,13 +101,13 @@ if __name__ == "__main__":
     # Create dataset for training.
     paths = paths_evaluation
     dataset = tf.data.Dataset.from_tensor_slices(paths)
-    dataset_norm = dataset.map(lambda path: tf_load_pickle(path, CONFIG.NORMALIZATION_VALUE))
+    dataset_norm = dataset.map(lambda path: tf_load_pickle(path, DATA_CONFIG.NORMALIZATION_VALUE))
     dataset_norm = dataset_norm.cache()
     dataset_norm = dataset_norm.prefetch(tf.data.experimental.AUTOTUNE)
     dataset_evaluation = dataset_norm
     del dataset_norm
 
-    prediction_list1 = get_height_prediction(CONFIG.MODEL_PATH, dataset_evaluation)
+    prediction_list1 = get_height_prediction(MODEL_CONFIG.NAME, dataset_evaluation)
 
     print(prediction_list1)
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         'scantype':scantype_list,
         'GT': target_list,
         'predicted':prediction_list
-        }, columns = constants.COLUMNS)
+        }, columns = RESULT_CONFIG.COLUMNS)
 
     df['GT'] = df['GT'].astype('float64')
     df['predicted'] = df['predicted'].astype('float64')
@@ -132,11 +132,8 @@ if __name__ == "__main__":
     MAE['error'] = MAE.apply(utils.avgerror, axis=1)
     #MAE
 
-    complete_name = CONFIG.EVAL_MODEL_NAME + CONFIG.EVAL_RUN_NO
-    print(complete_name)
-
     print("Saving the results")
-    utils.calculate_and_save_results(MAE, complete_name, CONFIG.CSV_OUT_PATH)
+    utils.calculate_and_save_results(MAE, EVAL_CONFIG.NAME, RESULT_CONFIG.SAVE_PATH)
 
     # Done.
     run.complete()
