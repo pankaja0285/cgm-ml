@@ -12,6 +12,7 @@ CODE_TO_SCANTYPE = {
 }
 
 # Error margin on various ranges
-EVALUATION_ACCURACIES = [.2, .4, .8, 1.2, 2., 2.5, 3., 4., 5., 6.]
+#EVALUATION_ACCURACIES = [.2, .4, .8, 1.2, 2., 2.5, 3., 4., 5., 6.]
+EVALUATION_ACCURACIES = [.2, .4, .6, 1,  1.2, 2., 2.5, 3., 4., 5., 6.]
 
 COLUMNS = ['qrcode', 'artifact', 'scantype', 'GT', 'predicted']
