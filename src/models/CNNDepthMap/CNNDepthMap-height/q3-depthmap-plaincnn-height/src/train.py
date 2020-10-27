@@ -13,6 +13,15 @@ from constants import REPO_DIR
 from model import create_cnn
 from preprocessing import preprocess_depthmap, preprocess_targets
 
+#initializing neptune
+import neptune
+neptune.init(
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiNjVmMWFjYmUtNzI4Yy00NTJiLTk3MjItMzJlZWE3ZjFjYmJlIn0=",
+    project_qualified_name="cgm-ml/height"  # You can change to your project-height,weight
+)
+#add a detailed description of the experiment
+description = "plaincnn for height prediction on depthmap"
+
 # Make experiment reproducible
 tf.random.set_seed(CONFIG.SPLIT_SEED)
 random.seed(CONFIG.SPLIT_SEED)
@@ -155,16 +164,25 @@ del dataset_norm
 
 # Note: Now the datasets are prepared.
 
+#parameters info to log into neptune
+training_params = CONFIG
+
 # Create the model.
 input_shape = (CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH, 1)
 model = create_cnn(input_shape, dropout=True)
 model.summary()
-
+model_params = {
+    "architecture": "plaincnn",
+    "activation": "relu",
+    "n_conv_layers": "12",
+    "n_dense_layers": "1024+128"}
 
 # Get ready to add callbacks.
 training_callbacks = []
 
 # Pushes metrics and losses into the run on AzureML.
+
+
 class AzureLogCallback(callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         if logs is not None:
@@ -174,6 +192,26 @@ class AzureLogCallback(callbacks.Callback):
 
 training_callbacks.append(AzureLogCallback())
 
+#creating the neptune experiment
+neptune.create_experiment(
+    params={**model_params, **training_params},
+    # dataset type, dataset version,quarter,user story
+    tags=['depthmap', 'anon-mini-95k', 'Q4', 'US'],
+    description=description
+)
+#logging the model to the neptune
+model.summary(print_fn=lambda x: neptune.log_text('model_summary', x))
+
+# Pushes metrics and losses into the run on Neptune
+
+
+class NeptuneLogger(callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        for log_name, log_value in logs.items():
+            neptune.log_metric(f'epoch_{log_name}', log_value)
+
+
+training_callbacks.append(NeptuneLogger())
 
 # Add TensorBoard callback.
 tensorboard_callback = tf.keras.callbacks.TensorBoard(
@@ -201,6 +239,7 @@ checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 training_callbacks.append(checkpoint_callback)
 
 optimizer = tf.keras.optimizers.Nadam(learning_rate=CONFIG.LEARNING_RATE)
+neptune.append_tags("optimizer:Nadam")
 
 # Compile the model.
 model.compile(
@@ -208,6 +247,7 @@ model.compile(
     loss="mse",
     metrics=["mae"]
 )
+neptune.append_tags("loss:mse")
 
 # Train the model.
 model.fit(
@@ -217,6 +257,8 @@ model.fit(
     callbacks=training_callbacks,
     verbose=2
 )
+if os.path.exists(best_model_path):
+    neptune.log_artifact(best_model_path)
 
 # Done.
 run.complete()
