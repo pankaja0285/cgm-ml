@@ -20,7 +20,7 @@ neptune.init(
     project_qualified_name="cgm-ml/height"  # You can change to your project-height,weight
 )
 #add a detailed description of the experiment
-description = "plaincnn for height prediction on depthmap"
+description = "Training a plaincnn for height prediction on depthmap-95k dataset with dropout"
 
 # Make experiment reproducible
 tf.random.set_seed(CONFIG.SPLIT_SEED)
@@ -196,7 +196,7 @@ training_callbacks.append(AzureLogCallback())
 neptune.create_experiment(
     params={**model_params, **training_params},
     # dataset type, dataset version,quarter,user story
-    tags=['depthmap', 'anon-mini-95k', 'Q4', 'US'],
+    tags=['depthmap', 'anon-mini-95k', '2020Q4', 'US149'],
     description=description
 )
 #logging the model to the neptune
