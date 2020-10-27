@@ -10,3 +10,4 @@ psycopg2==2.7.5
 tqdm==4.31.1
 pandas==0.23.0
 ipywidgets==7.2.1
+neptune-client==0.4.125
