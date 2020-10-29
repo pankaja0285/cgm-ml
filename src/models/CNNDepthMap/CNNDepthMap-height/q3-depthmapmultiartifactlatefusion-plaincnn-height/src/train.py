@@ -1,7 +1,6 @@
 from pathlib import Path
 import os
 import random
-from typing import List
 
 import glob2 as glob
 import tensorflow as tf
@@ -10,10 +9,10 @@ from azureml.core.run import Run
 from tensorflow.keras import callbacks, layers, models
 
 from config import CONFIG, DATASET_MODE_DOWNLOAD, DATASET_MODE_MOUNT
-from constants import DATA_DIR_ONLINE_RUN, REPO_DIR
-from model import create_base_cnn, create_head, load_base_cgm_model
-from preprocessing import create_multiartifact_paths, tf_load_pickle, tf_augment_sample
-from utils import download_dataset, get_dataset_path
+from constants import DATA_DIR_ONLINE_RUN, MODEL_CKPT_FILENAME, REPO_DIR
+from model import create_head, get_base_model
+from preprocessing import create_samples, tf_load_pickle, tf_augment_sample
+from utils import download_dataset, get_dataset_path, AzureLogCallback, create_tensorboard_callback
 
 # Make experiment reproducible
 tf.random.set_seed(CONFIG.SPLIT_SEED)
@@ -72,8 +71,6 @@ split_index = int(len(qrcode_paths) * 0.8)
 qrcode_paths_training = qrcode_paths[:split_index]
 
 qrcode_paths_validate = qrcode_paths[split_index:]
-qrcode_paths_activation = random.choice(qrcode_paths_validate)
-qrcode_paths_activation = [qrcode_paths_activation]
 
 del qrcode_paths
 
@@ -82,33 +79,17 @@ print("Paths for training:")
 print("\t" + "\n\t".join(qrcode_paths_training))
 print("Paths for validation:")
 print("\t" + "\n\t".join(qrcode_paths_validate))
-print("Paths for activation:")
-print("\t" + "\n\t".join(qrcode_paths_activation))
 
 print(len(qrcode_paths_training))
 print(len(qrcode_paths_validate))
 
 assert len(qrcode_paths_training) > 0 and len(qrcode_paths_validate) > 0
 
-
-def create_samples(qrcode_paths: List[str]) -> List[List[str]]:
-    samples = []
-    for qrcode_path in sorted(qrcode_paths):
-        for code in CONFIG.CODES_FOR_POSE_AND_SCANSTEP:
-            p = os.path.join(qrcode_path, code)
-            new_samples = create_multiartifact_paths(p, CONFIG.N_ARTIFACTS)
-            samples.extend(new_samples)
-    return samples
-
-
 paths_training = create_samples(qrcode_paths_training)
 print(f"Samples for training: {len(paths_training)}")
 
 paths_validate = create_samples(qrcode_paths_validate)
 print(f"Samples for validate: {len(paths_validate)}")
-
-paths_activate = create_samples(qrcode_paths_activation)
-print(f"Samples for activate: {len(paths_activate)}")
 
 # Create dataset for training.
 paths = paths_training  # list
@@ -136,47 +117,17 @@ dataset_norm = dataset_norm.prefetch(tf.data.experimental.AUTOTUNE)
 dataset_validation = dataset_norm
 del dataset_norm
 
-# Create dataset for activation
-# paths = paths_activate
-# dataset = tf.data.Dataset.from_tensor_slices(paths)
-# dataset_norm = dataset.map(lambda path: tf_load_pickle(path), tf.data.experimental.AUTOTUNE)
-# dataset_norm = dataset_norm.cache()
-# dataset_norm = dataset_norm.prefetch(tf.data.experimental.AUTOTUNE)
-# dataset_activation = dataset_norm
-# del dataset_norm
-
 # Note: Now the datasets are prepared.
 
 
-def download_pretrained_model(output_model_fpath):
-    print(f"Downloading pretrained model from {CONFIG.PRETRAINED_RUN}")
-    previous_experiment = Experiment(workspace=workspace, name=CONFIG.PRETRAINED_EXPERIMENT)
-    previous_run = Run(previous_experiment, CONFIG.PRETRAINED_RUN)
-    previous_run.download_file("outputs/best_model.h5", output_model_fpath)
-
-
-def get_base_model():
-    if CONFIG.PRETRAINED_RUN:
-        model_fpath = DATA_DIR / "pretrained/" / CONFIG.PRETRAINED_RUN / "best_model.h5"
-        if not os.path.exists(model_fpath):
-            download_pretrained_model(model_fpath)
-        print(f"Loading pretrained model from {model_fpath}")
-        base_model = load_base_cgm_model(model_fpath, should_freeze=CONFIG.SHOULD_FREEZE_BASE)
-    else:
-        input_shape = (CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH, 1)
-        base_model = create_base_cnn(input_shape, dropout=CONFIG.USE_DROPOUT)  # output_shape: (128,)
-    return base_model
-
-
 # Create the base model
-base_model = get_base_model()
+base_model = get_base_model(workspace, DATA_DIR)
 base_model.summary()
 assert base_model.output_shape == (None, 128)
 
 # Create the head
 head_input_shape = (128 * CONFIG.N_ARTIFACTS,)
 head_model = create_head(head_input_shape, dropout=CONFIG.USE_CROPOUT)
-# head_model.summary()
 
 # Implement artifact flow through the same model
 model_input = layers.Input(
@@ -196,45 +147,18 @@ model_output = head_model(concatenation)
 model = models.Model(model_input, model_output)
 model.summary()
 
-# Get ready to add callbacks.
-training_callbacks = []
-
-
-# Pushes metrics and losses into the run on AzureML.
-class AzureLogCallback(callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        if logs is not None:
-            for key, value in logs.items():
-                run.log(key, value)
-
-
-training_callbacks.append(AzureLogCallback())
-
-
-# Add TensorBoard callback.
-tensorboard_callback = tf.keras.callbacks.TensorBoard(
-    log_dir="logs",
-    histogram_freq=0,
-    write_graph=True,
-    write_grads=False,
-    write_images=True,
-    embeddings_freq=0,
-    embeddings_layer_names=None,
-    embeddings_metadata=None,
-    embeddings_data=None,
-    update_freq="epoch"
-)
-training_callbacks.append(tensorboard_callback)
-
-# Add checkpoint callback.
-best_model_path = str(DATA_DIR / 'outputs/best_model.ckpt')
-checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+best_model_path = str(DATA_DIR / f'outputs/{MODEL_CKPT_FILENAME}')
+checkpoint_callback = callbacks.ModelCheckpoint(
     filepath=best_model_path,
     monitor="val_loss",
     save_best_only=True,
     verbose=1
 )
-training_callbacks.append(checkpoint_callback)
+training_callbacks = [
+    AzureLogCallback(run),
+    create_tensorboard_callback(),
+    checkpoint_callback
+]
 
 optimizer = tf.keras.optimizers.Nadam(learning_rate=CONFIG.LEARNING_RATE)
 
