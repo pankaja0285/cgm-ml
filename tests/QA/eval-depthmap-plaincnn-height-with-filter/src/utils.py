@@ -10,13 +10,14 @@ from PIL import Image
 from test_config import DATA_CONFIG, RESULT_CONFIG
 
 
-def check(data):
-    img=tf.convert_to_tensor(data)
+def process_image(data):
+    img = tf.convert_to_tensor(data)
     img = tf.cast(img, tf.float32) * (1. / 256)
     img = tf.image.rot90(img, k=3)
     img = tf.image.resize(img, [240, 180])
     img = tf.expand_dims(img, axis=0)
     return img
+
 
 def preprocess_depthmap(depthmap):
     # TODO here be more code.
@@ -39,9 +40,9 @@ def get_depthmap_files(paths):
 def get_column_list(depthmap_path_list, prediction):
 
     qrcode_list, scan_type_list, artifact_list, prediction_list, target_list = [], [], [], [], []
-    
+
     for idx, path in enumerate(depthmap_path_list):
-        _, targets,image = pickle.load(open(path, "rb"))
+        _, targets, image = pickle.load(open(path, "rb"))
         targets = preprocess_targets(targets, DATA_CONFIG.TARGET_INDEXES)
         target = np.squeeze(targets)
 
@@ -78,14 +79,14 @@ def calculate_performance(code, df_mae):
 
 
 def calculate_and_save_results(MAE, complete_name, CSV_OUT_PATH):
-    
+
     ## Calculate accuracies across the scantypes
 
     dfs = []
     for code in DATA_CONFIG.CODE_TO_SCANTYPE.keys():
         df = calculate_performance(code, MAE)
         full_model_name = complete_name + DATA_CONFIG.CODE_TO_SCANTYPE[code]
-        df.rename(index={0:full_model_name}, inplace=True)
+        df.rename(index={0: full_model_name}, inplace=True)
         #display(HTML(df.to_html()))
         dfs.append(df)
 
@@ -96,4 +97,3 @@ def calculate_and_save_results(MAE, complete_name, CSV_OUT_PATH):
 
     # Save the model results in csv file
     result.to_csv(CSV_OUT_PATH, index=True)
-

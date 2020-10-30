@@ -20,7 +20,7 @@ from test_config import (DATA_CONFIG, EVAL_CONFIG, FILTER_CONFIG, MODEL_CONFIG,
 # Function for loading and processing depthmaps.
 def tf_load_pickle(path, max_value):
     def py_load_pickle(path, max_value):
-        depthmap, targets ,image = pickle.load(open(path.numpy(), "rb"))
+        depthmap, targets, image = pickle.load(open(path.numpy(), "rb"))
         depthmap = utils.preprocess_depthmap(depthmap)
         depthmap = depthmap / max_value
         depthmap = tf.image.resize(depthmap, (DATA_CONFIG.IMAGE_TARGET_HEIGHT, DATA_CONFIG.IMAGE_TARGET_WIDTH))
@@ -31,6 +31,7 @@ def tf_load_pickle(path, max_value):
     depthmap.set_shape((DATA_CONFIG.IMAGE_TARGET_HEIGHT, DATA_CONFIG.IMAGE_TARGET_WIDTH, 1))
     targets.set_shape((len(DATA_CONFIG.TARGET_INDEXES,)))
     return depthmap, targets
+
 
 def get_height_prediction(MODEL_PATH, dataset_evaluation):
     model = load_model(MODEL_PATH)
@@ -98,26 +99,24 @@ if __name__ == "__main__":
 
     print("Using {} artifact files for evaluation.".format(len(paths_evaluation)))
     # remove data from paths_evaluation
-    
-    standing= load_model(FILTER_CONFIG.NAME)
-    new_paths_evaluation=paths_evaluation
-    '''
-    exc=[]
-    new_paths_evaluation=[]
+
+    standing = load_model(FILTER_CONFIG.NAME)
+    new_paths_evaluation = paths_evaluation
+
+    exc = []
+    new_paths_evaluation = []
     for p in paths_evaluation:
-        depthmap, targets ,image = pickle.load(open(p, "rb"))
+        depthmap, targets, image = pickle.load(open(p, "rb"))
         try:
-            image=utils.check(image)
-            if standing.predict(image) > .9 :
+            image = utils.process_image(image)
+            if standing.predict(image) > .9:
                 new_paths_evaluation.append(p)
         except ValueError:
             exc.append(image)
-    '''   
-    
+
     print(len(new_paths_evaluation))
     print(len(paths_evaluation))
     #print(exc)
-
 
     # Create dataset for training.
     paths = new_paths_evaluation
@@ -128,20 +127,19 @@ if __name__ == "__main__":
     dataset_evaluation = dataset_norm
     del dataset_norm
 
-
     prediction_list1 = get_height_prediction(MODEL_CONFIG.NAME, dataset_evaluation)
 
     qrcode_list, scantype_list, artifact_list, prediction_list, target_list = utils.get_column_list(
-        new_paths_evaluation, 
+        new_paths_evaluation,
         prediction_list1)
 
     df = pd.DataFrame({
-        'qrcode':qrcode_list,
-        'artifact':artifact_list,
-        'scantype':scantype_list,
+        'qrcode': qrcode_list,
+        'artifact': artifact_list,
+        'scantype': scantype_list,
         'GT': target_list,
-        'predicted':prediction_list
-        }, columns = RESULT_CONFIG.COLUMNS)
+        'predicted': prediction_list
+    }, columns=RESULT_CONFIG.COLUMNS)
 
     df['GT'] = df['GT'].astype('float64')
     df['predicted'] = df['predicted'].astype('float64')
