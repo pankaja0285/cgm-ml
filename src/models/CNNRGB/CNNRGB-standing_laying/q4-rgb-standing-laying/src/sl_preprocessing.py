@@ -2,7 +2,7 @@ import os
 
 import tensorflow as tf
 
-from config import CONFIG
+from sl_config import CONFIG
 
 class_names = ['laying', 'standing']
 
