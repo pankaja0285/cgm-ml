@@ -15,23 +15,21 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-import the necessary functions
-'''
-import os
-from cv2 import cv2
-import numpy as np
 
 import logging
+import os
+from typing import Iterable
+
+import numpy as np
+from cv2 import cv2
 from PIL import Image
-
-from cgm_fusion.calibration import get_intrinsic_matrix, get_extrinsic_matrix, get_k
-from cgm_fusion.utility import fuse_point_cloud
-
 from pyntcloud import PyntCloud
 
+from cgm_fusion.calibration import get_extrinsic_matrix, get_intrinsic_matrix, get_k
+from cgm_fusion.utility import fuse_point_cloud
 
-def projectPoints(pcd_points, calibration_file):
+
+def project_points(pcd_points, calibration_file):
 
     #get the data for calibration
     intrinsic = get_intrinsic_matrix(calibration_file)
@@ -63,7 +61,6 @@ def get_depth_image_from_point_cloud(calibration_file, pcd_file, output_file):
     except ValueError:
         logging.error(" Error reading point cloud ")
         raise
-        return
 
     # points       = cloud.points.values[:, :3]
     z = cloud.points.values[:, 3]
@@ -118,6 +115,13 @@ def get_depth_image_from_point_cloud(calibration_file, pcd_file, output_file):
     # im_coords, _ = cv2.projectPoints(points, r_vec, t_vec, intrinsic[:3, :3], np.array([k1, k2, 0, 0]))
 
 
+def does_path_belong_to_codes(path: str, codes: Iterable) -> bool:
+    for code in codes:
+        if f"_{code}_" in path:
+            return True
+    return False
+
+
 def fuse_rgbd(calibration_file,
               pcd_file,
               image,
@@ -131,7 +135,7 @@ def fuse_rgbd(calibration_file,
 
     points = cloud.points.values[:, :3]
     #getting projected points
-    im_coords, jac = projectPoints(points, calibration_file)
+    im_coords, jac = project_points(points, calibration_file)
 
     #setting the RGB image dimensions
     scale = 0.1
@@ -158,26 +162,31 @@ def fuse_rgbd(calibration_file,
         y = int(im_coords[i][0][1] * scale)
         if x >= 0 and y >= 0 and x < width and y < height:
             depth = points[i][2]
-            if '_100_' in pcd_name or '_101_' in pcd_name or '_102_' in pcd_name:
+
+            if does_path_belong_to_codes(pcd_name, codes=("100", "101", "102")):
                 newx = y
                 newy = width - x - 1
 
-            elif '_200_' in pcd_name or '_201_' in pcd_name or '_202_' in pcd_name:
+            elif does_path_belong_to_codes(pcd_name, codes=("200", "201", "202")):
                 newx = height - y - 1
                 newy = x
+            else:
+                raise NameError(f"{pcd_name} does not have a correct code")
 
             viz_image[newy][height - newx - 1][3] = depth
 
     for x in range(width):
         for y in range(height):
 
-            if '_100_' in pcd_name or '_101_' in pcd_name or '_102_' in pcd_name:
+            if does_path_belong_to_codes(pcd_name, codes=("100", "101", "102")):
                 newx = y
                 newy = width - x - 1
 
-            elif '_200_' in pcd_name or '_201_' in pcd_name or '_202_' in pcd_name:
+            elif does_path_belong_to_codes(pcd_name, codes=("200", "201", "202")):
                 newx = height - y - 1
                 newy = x
+            else:
+                raise NameError(f"{pcd_name} does not have a correct code")
 
             viz_image[newy][newx][0] = im_array[y][x][0] / 255.0
             viz_image[newy][newx][1] = im_array[y][x][1] / 255.0
@@ -186,9 +195,7 @@ def fuse_rgbd(calibration_file,
 
 
 def apply_fusion(calibration_file, pcd_file, jpg_file, seg_path):
-    '''
-    check the path if everything is correct
-    '''
+    '''Check the path if everything is correct'''
     if not os.path.exists(pcd_file):  # check all files exist
         logging.error('Point cloud does not exist')
         return
@@ -210,7 +217,6 @@ def apply_fusion(calibration_file, pcd_file, jpg_file, seg_path):
     except ValueError:
         logging.error(" Error reading point cloud ")
         raise
-        return
 
     jpg = cv2.imread(jpg_file, -1)
     jpg = cv2.flip(jpg, 0)
@@ -226,7 +232,7 @@ def apply_fusion(calibration_file, pcd_file, jpg_file, seg_path):
 
     # get the data for calibration
 
-    im_coords, _ = projectPoints(points, calibration_file)
+    im_coords, _ = project_points(points, calibration_file)
 
     color_vals = np.zeros_like(points)
 

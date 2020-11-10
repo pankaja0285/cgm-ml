@@ -16,16 +16,22 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from cgm_fusion.calibration import get_intrinsic_matrix_depth, get_extrinsic_matrix_depth, get_k_depth
-import numpy as np
-import os
 import logging
-from cv2 import cv2
-import pandas as pd
+import os
+from enum import IntEnum
 
+import numpy as np
+import pandas as pd
+from cv2 import cv2
 from pyntcloud import PyntCloud
 from pyntcloud.io import write_ply
-from enum import IntEnum
+
+from cgm_fusion.calibration import (get_extrinsic_matrix_depth,
+                                    get_intrinsic_matrix_depth, get_k_depth)
+
+
+HEIGHT = 224
+WIDTH = 172
 
 
 def fuse_point_cloud(points, rgb_vals, confidence, seg_vals):
@@ -58,9 +64,6 @@ def write_color_ply(fname, points, color_vals, confidence, normals):
     print(fname)
 
 
-#from cgm_fusion.calibration import get_intrinsic_matrix, get_extrinsic_matrix, get_k, get_intrinsic_matrix_depth
-
-
 def apply_projection(points, calibration_file):
     intrinsic = get_intrinsic_matrix_depth(calibration_file)
 
@@ -90,24 +93,19 @@ class Channel(IntEnum):
     nz = 10
 
 
-def get_depth_channel(ply_path, output_path_np, output_path_png,
-                      calibration_file):
-    Channel.z
-
+def get_depth_channel(ply_path, output_path_np, output_path_png, calibration_file):
     if not os.path.exists(calibration_file):  # check if the califile exists
         logging.error('Calibration does not exist')
         return
 
     # get a default black image
-    height = 224  # todo remove magic numbers
-    width = 172  # todo remove magic numbers
     nr_of_channels = 1
-    viz_image = np.zeros((height, width, nr_of_channels), np.float64)
+    viz_image = np.zeros((HEIGHT, WIDTH, nr_of_channels), np.float64)
 
     try:
         cloud = PyntCloud.from_file(ply_path)  # load the data from the files
     except ValueError as e:
-        logging.error(" Error reading point cloud ")
+        logging.error("Error reading point cloud")
         logging.error(str(e))
         logging.error(ply_path)
 
@@ -131,7 +129,7 @@ def get_depth_channel(ply_path, output_path_np, output_path_png,
         x, y = t.squeeze()
         x = int(np.round(x))
         y = int(np.round(y))
-        if x >= 0 and x < height and y >= 0 and y < width:
+        if x >= 0 and x < HEIGHT and y >= 0 and y < WIDTH:
             viz_image[x, y] = z[i]  # 255 #255-255*z[i]
 
     # img_debug = cv2.normalize(src=viz_image,
@@ -162,17 +160,13 @@ def get_depth_channel(ply_path, output_path_np, output_path_png,
 
 
 def get_rgbd_channel(ply_path, output_path_np, calibration_file):
-    Channel.z
-
     if not os.path.exists(calibration_file):  # check if the califile exists
         logging.error('Calibration does not exist')
         return
 
     # get a default black image
-    height = 224  # todo remove magic numbers
-    width = 172  # todo remove magic numbers
     nr_of_channels = 4
-    viz_image = np.zeros((height, width, nr_of_channels), np.float64)
+    viz_image = np.zeros((HEIGHT, WIDTH, nr_of_channels), np.float64)
 
     try:
         cloud = PyntCloud.from_file(ply_path)  # load the data from the files
@@ -200,7 +194,7 @@ def get_rgbd_channel(ply_path, output_path_np, calibration_file):
         x, y = t.squeeze()
         x = int(np.round(x))
         y = int(np.round(y))
-        if x >= 0 and x < height and y >= 0 and y < width:
+        if x >= 0 and x < HEIGHT and y >= 0 and y < WIDTH:
             viz_image[x, y, 0] = r[i]
             viz_image[x, y, 1] = g[i]
             viz_image[x, y, 2] = b[i]
@@ -211,17 +205,13 @@ def get_rgbd_channel(ply_path, output_path_np, calibration_file):
 
 
 def get_all_channel(ply_path, output_path_np, calibration_file):
-    Channel.z
-
     if not os.path.exists(calibration_file):  # check if the califile exists
         logging.error('Calibration does not exist')
         return
 
     # get a default black image
-    height = 224  # todo remove magic numbers
-    width = 172  # todo remove magic numbers
     nr_of_channels = 11
-    viz_image = np.zeros((height, width, nr_of_channels), np.float64)
+    viz_image = np.zeros((HEIGHT, WIDTH, nr_of_channels), np.float64)
 
     try:
         cloud = PyntCloud.from_file(ply_path)  # load the data from the files
@@ -257,7 +247,7 @@ def get_all_channel(ply_path, output_path_np, calibration_file):
         x, y = t.squeeze()
         x = int(np.round(x))
         y = int(np.round(y))
-        if x >= 0 and x < height and y >= 0 and y < width:
+        if x >= 0 and x < HEIGHT and y >= 0 and y < WIDTH:
             viz_image[x, y, 0] = x[i]
             viz_image[x, y, 1] = y[i]
             viz_image[x, y, 2] = z[i]
@@ -277,11 +267,6 @@ def get_all_channel(ply_path, output_path_np, calibration_file):
     return viz_image
 
 
-'''
-Function to get the depth from a point cloud as an image for visualization
-'''
-
-
 def get_viz_channel(calibration_file,
                     ply_path,
                     channel=Channel.z,
@@ -292,10 +277,8 @@ def get_viz_channel(calibration_file,
         return
 
     # get a default black image
-    height = 224
-    width = 172
     nr_of_channels = 1
-    viz_image = np.zeros((height, width, nr_of_channels), np.uint8)
+    viz_image = np.zeros((HEIGHT, WIDTH, nr_of_channels), np.uint8)
 
     # get the points from the pointcloud
     try:
@@ -320,7 +303,7 @@ def get_viz_channel(calibration_file,
         x, y = t.squeeze()
         x = int(np.round(x))
         y = int(np.round(y))
-        if x >= 0 and x < height and y >= 0 and y < width:
+        if x >= 0 and x < HEIGHT and y >= 0 and y < WIDTH:
             viz_image[x, y] = 255 * z[i]
 
     # resize and  return the image after pricessing
@@ -331,41 +314,24 @@ def get_viz_channel(calibration_file,
     return viz_image
 
 
-'''
-Function to get the rgb from a point cloud as an image for visualization
-'''
-
-
 def get_viz_rgb(ply_path):
+    '''Function to get the rgb from a point cloud as an image for visualization'''
     get_viz_channel(ply_path, channel=Channel.red, output_path="/tmp/red.png")
 
 
-'''
-Function to get the confidence from a point cloud as an image for visualization
-'''
-
-
 def get_viz_confidence(ply_path):
+    '''Function to get the confidence from a point cloud as an image for visualization'''
     get_viz_channel(ply_path,
                     channel=Channel.confidence,
                     output_path="/tmp/confidence.png")
-
-
-'''
-Function to get the confidence from a point cloud as an image for visualization
-'''
 
 
 def get_viz_depth(ply_path):
     get_viz_channel(ply_path, channel=Channel.z, output_path="/tmp/depth.png")
 
 
-'''
-Function to get the segmentation from a point cloud as an image for visualization
-'''
-
-
 def get_viz_segmentation(ply_path):
+    '''Function to get the segmentation from a point cloud as an image for visualization'''
     get_viz_channel(ply_path,
                     channel=Channel.segmentation,
                     output_path="/tmp/segmentation.png")
