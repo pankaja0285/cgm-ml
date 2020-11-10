@@ -215,6 +215,15 @@ if __name__ == "__main__":
         [norm_rgb_time, rgb_path] = get_timestamps_from_rgb(rgb_paths)
         [norm_pcd_time, pcd_path] = get_timestamps_from_pcd(pcd_paths)
 
+        rgb_dict = {}
+
+        for time, path in zip(norm_rgb_time, rgb_path):
+            rgb_dict[time] = path
+        sorted_rgb_dict = dict(sorted(rgb_dict.items()))
+        norm_rgb_time = list(sorted_rgb_dict.keys())
+        rgb_path = list(sorted_rgb_dict.values())
+        norm_rgb_time = np.asarray(norm_rgb_time)
+
         paths = get_files(norm_rgb_time, rgb_path, norm_pcd_time, pcd_path)
 
         #processing every pcd file with its nearest rgb using multiprocessing workers
