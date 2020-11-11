@@ -24,14 +24,14 @@ REGEX_PICKLE = re.compile(
                               tf.TensorSpec(None, tf.float32),  # (1,)
                               ])
 def tf_augment_sample(depthmap, targets):
-    depthmap_aug = tf.numpy_function(augmentation, [depthmap, CONFIG.DATA_AUGMENTATION_MODE], tf.float32)
+    depthmap_aug = tf.numpy_function(augment, [depthmap, CONFIG.DATA_AUGMENTATION_MODE], tf.float32)
     depthmap_aug.set_shape((CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH, CONFIG.N_ARTIFACTS))
     targets.set_shape((len(CONFIG.TARGET_INDEXES,)))
 
     return depthmap_aug, targets
 
 
-def augmentation(image: np.ndarray, mode=DATA_AUGMENTATION_SAME_PER_CHANNEL) -> np.ndarray:
+def augment(image: np.ndarray, mode=DATA_AUGMENTATION_SAME_PER_CHANNEL) -> np.ndarray:
     assert len(image.shape) == 3, f"image array should have 3 dimensions, but has {len(image.shape)}"
     height, width, n_channels = image.shape
     image = image.astype(np.float32)
@@ -132,16 +132,6 @@ def py_load_pickle(path, max_value):
     depthmap = tf.image.resize(depthmap, (CONFIG.IMAGE_TARGET_HEIGHT, CONFIG.IMAGE_TARGET_WIDTH))
     targets = preprocess_targets(targets, CONFIG.TARGET_INDEXES)
     return depthmap, targets
-
-
-def create_samples(qrcode_paths: List[str]) -> List[List[str]]:
-    samples = []
-    for qrcode_path in sorted(qrcode_paths):
-        for code in CONFIG.CODES_FOR_POSE_AND_SCANSTEP:
-            p = os.path.join(qrcode_path, code)
-            new_samples = create_multiartifact_paths(p, CONFIG.N_ARTIFACTS)
-            samples.extend(new_samples)
-    return samples
 
 
 def create_multiartifact_paths(qrcode_path: str, n_artifacts: int) -> List[List[str]]:
