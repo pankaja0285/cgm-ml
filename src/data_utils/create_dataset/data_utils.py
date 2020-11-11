@@ -2,14 +2,19 @@ import sys
 # sys.path.append('.')
 import dbutils
 import pandas as pd
+from glob2 import glob
 import yaml
-from pyntcloud import PyntCloud
+import random
+import logging
+import pathlib 
+import logging
 import utils
 import numpy as np
 
 
 def extract_qrcode(row):
-    """ get the qrcode from the artifacts 
+    """ 
+    get the qrcode from the artifacts 
 
     Args:
         row (dataframe rows): complete row of a dataframe
@@ -22,22 +27,22 @@ def extract_qrcode(row):
     return split_qrc
 
 class CollectQrcodes:
-    """ class to gather a qrcodes from backend to prepare dataset for model training and evaluation.
+    """ 
+    class to gather a qrcodes from backend to prepare dataset for model training and evaluation.
+
     """
 
     def __init__(self,db_connector):
         """
-
         Args:
             db_connector (json_file): json file to connect to the database.
         """
         self.db_connector = db_connector
         self.ml_connector = dbutils.connect_to_main_database(self.db_connector)
-    def get_all_data(self,realtime):
-        """ Gather the qrcodes from the databse with labels.
 
-        Args:
-            realtime (bool): boolean value weather to prepare clean dataset or not.
+    def get_all_data(self):
+        """ 
+        Gather the qrcodes from the databse with labels.
 
         Returns:
             dataframe: panda dataframe contains data from databse.    
@@ -48,48 +53,29 @@ class CollectQrcodes:
         database = self.ml_connector.execute(query, fetch_all=True)
         database = pd.DataFrame(database,columns= columns)
         database['qrcode'] = database.apply(extract_qrcode,axis=1)
-        if realtime:
-            complete_data = database 
-        else:
-            complete_data = database[database['tag'] =='good']     
-        return complete_data
-
-    def get_training_data(self,data,full_dataset=True):
-        """ get the training  data from database.
-        Args:
-            data (dataframe): panda dataframe containing the qrcode and labels.
-            full_dataset(Boolean): boolean value to specify if all the training data to processed or just the remaining one.
+        return database
+        
+    def get_scangroup_data(self,data,scangroup):
         """
-
-        if full_dataset:
-            training_data = data[(data['scan_group']=='train')|(data['scan_group'].isnull())]
-        else:
-            training_data = data[data['scan_group'].isnull()]
-
-        return training_data
-
-    def get_evalaution_data(self,data,full_dataset=True):
-
-        """ get the evaluation data from database.
+        Get the data from the available pool and scan_group pool
 
         Args:
-            data (dataframe): panda dataframe containing the qrcode and labels.
-            full_dataset(Boolean): boolean value to specify if all the evaluation data to processed or just the remaining one
-        """
-        if full_dataset:
-            evaluation_data = data[(data['scan_group']=='test')|(data['scan_group'].isnull())]
-        else:
-            evaluation_data = data[data['scan_group'].isnull()]
+            data (dataframe): dataframe having all the data from the database
+            scangroup (string): 'train or 'test' scan_group
 
-        return evaluation_data
+        Returns:
+            dataframe: dataframe having data from the specific scan_group type or null type. 
+        """
+        scangroup_data = data[(data['scan_group']==scangroup)|(data['scan_group'].isnull())]
+        return scangroup_data
+
 
     def get_unique_qrcode(self,dataframe):
         """
-        Get a unique qrcodes from the dataframe file and return dataframe with qrcodes, scan_group, tags
+        Get a unique qrcodes from the dataframe file and return dataframe with qrcodes, scan_group, tags.
 
         Args:
             dataframe (panda dataframe): A panda dataframe file with qrcodes, artifacts, and all the metadata.
-
         """
         data = dataframe.drop_duplicates(subset = ["qrcode"],keep='first') 
         unique_qrcode_data = data[['qrcode','scan_group','tag']]
@@ -104,23 +90,13 @@ class CollectQrcodes:
             amount ([type]): [description]
         """
         available_data = dataframe[dataframe['scan_group'].isnull()]
-        used_qrcodes =  dataframe[dataframe['scan_group'] == scan_group]
-        bad_amount  = int(.4*amount)
-        good_amount  = int(amount - bad_amount)
-        used_good_qrcodes = used_qrcodes[used_qrcodes['tag'] == 'good']
-        used_bad_qrcodes = used_qrcodes[used_qrcodes['tag'] == 'bad']
-        required_good_amount = good_amount -len(used_good_qrcodes)
-        if required_good_amount <= 0:
-            print("Not enough good qrcodes present in database")
-            return
-        required_bad_amount = bad_amount -len(used_bad_qrcodes)
+        used_data =  dataframe[dataframe['scan_group'] == scan_group]
+        required_amount = int(amount) - len(used_data)
+        if required_amount <=0:
+            return logging.warning("Amount scans given is less than already used scans")
 
-        if required_bad_amount <=0:
-            print("Not enough bad qrcodes present in database")
-            return
-        new_good_qrcodes = available_data[available_data['tag'] =='good'].sample(n=required_good_amount)
-        new_bad_qrcodes = available_data[available_data['tag'] =='bad'].sample(n=required_bad_amount)
-        dataList = [used_qrcodes,new_good_qrcodes,new_bad_qrcodes]
+        remain_data = available_data.sample(n=amount -len(used_data))
+        dataList = [used_data,remain_data]
         complete_data = pd.concat(dataList)
         return complete_data
 
@@ -158,7 +134,8 @@ class CollectQrcodes:
         return artifacts
 
     def merge_data_artifacts(self,data,artifacts):
-        """ Merge the two dataset of artifacts and posenet database 
+        """ 
+        Merge the two dataset of artifacts and posenet database 
 
         Args:
             data (dataframe):  dataframe with  qrcodes and all the other labels.
@@ -180,19 +157,6 @@ class CollectQrcodes:
         """
         posenet_results = pd.merge(data,posenet[['id','json_value','confidence_value']],on='id',how='left')
         return posenet_results
-    
-def load_pcd_as_ndarray(pcd_path):
-    """[summary]
-
-    Args:
-        pcd_path ([type]): [description]
-
-    Returns:
-        [type]: [description]
-    """
-    pointcloud = PyntCloud.from_file(pcd_path)
-    values = pointcloud.points.values
-    return values
 
 
 ## convert pointcloud to depthmaps

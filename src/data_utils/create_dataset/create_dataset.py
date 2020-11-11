@@ -2,6 +2,7 @@ import sys
 sys.path.append('.')
 import dbutils
 import pandas as pd
+# import utils
 import numpy as np
 from glob2 import glob
 from azureml.core import Workspace, Dataset
@@ -13,8 +14,10 @@ import os
 import multiprocessing
 import pathlib 
 from data_utils import CollectQrcodes,lenovo_pcd2depth
+from pyntcloud import PyntCloud
 import shutil
 import utils
+
 
 ## Load the yaml file
 with open("parameters.yml", "r") as ymlfile:
@@ -24,13 +27,10 @@ with open("parameters.yml", "r") as ymlfile:
 # Parse all the configuration variables
 
 db_file = cfg["database"]['db_connection_file']
-training_file = cfg['csv_paths']['training_paths']
-testing_file = cfg['csv_paths']['testing_paths']
 number_of_scans =cfg['scans']['scan_amount']
 calibration_file = cfg['calibration']['calibration_file']
-dataset_name = cfg['data']['dataset']
+scangroup= cfg['data']['scangroup']
 target_folder = cfg['paths']['target_path']
-realtime = cfg['scans']['realtime']
 source = cfg['paths']['source_path']
 
 pcd_path = target_folder+'pointclouds'
@@ -46,19 +46,20 @@ if not os.path.exists(rgb_path):
     os.makedirs(rgb_path)
 
 dataset = CollectQrcodes(db_file)
-print("Starting the dataset Preparation:")
-data = dataset.get_all_data(realtime=realtime)
-evaluation_data = dataset.get_evalaution_data(data=data,full_dataset=True)
-evaluation_qrcodes = dataset.get_unique_qrcode(evaluation_data)
-new_evaluation_data = dataset.get_usable_data(dataframe=evaluation_qrcodes,amount=number_of_scans,scan_group='test')
-print(new_evaluation_data)
-# new_evaluation_data = new_evaluation_data[new_evaluation_data['tag'] != 'delete'] #TODO : check and then remove
-full_dataset = dataset.merge_qrcode_dataset(new_evaluation_data,evaluation_data)
+logging.info("Starting the dataset Preparation:")
+data = dataset.get_all_data()
+scangroup_data = dataset.get_scangroup_data(data=data,scangroup=scangroup)
+scangroup_qrcodes = dataset.get_unique_qrcode(scangroup_data)
+new_scangroup_data = dataset.get_usable_data(dataframe=scangroup_qrcodes,amount=number_of_scans,scan_group=scangroup)
 
-print("Saving the csv file for EDA notebook.")
+#new_scangroup_data = new_scangroup_data[new_scangroup_data['tag'] != 'delete'] 
+
+full_dataset = dataset.merge_qrcode_dataset(new_scangroup_data,scangroup_data)
+
+logging.info("Saving the csv file for EDA notebook.")
 full_dataset.to_csv('evaluation.csv',index=False)
 
-## Create the RGB csv file for posenet.
+# Create the RGB csv file for posenet.
 
 get_posenet_data = dataset.get_posenet_results()
 get_rgb_artifacts = dataset.get_artifacts()
@@ -74,7 +75,7 @@ Width = utils.setWidth(int(240 * 0.75))
 Height = utils.setHeight(int(180 * 0.75))
 
 
-print("Processing the data")
+logging.warning("Processing the data:")
 
 def process_data(rows):
     source_path = source + rows['storage_path']
@@ -84,8 +85,8 @@ def process_data(rows):
     depthmaps = lenovo_pcd2depth(source_path,calibration)
     max_value = depthmaps.max()
     if max_value > 10:
-        logging.warning(pcdfile)
-        return
+       logging.warning(pcdfile)
+       return
     scantype = pcdfile.split('_')[3]
     pickle_file = pcdfile.replace('.pcd','.p')
     labels = np.array([float(rows['height']),float(rows['weight']),float(rows['muac']),rows['age'],rows['sex'],rows['tag'],rows['scan_group']])
@@ -95,7 +96,6 @@ def process_data(rows):
     data = (depthmaps,labels)
     depthmap_save_path = depthmap_complete_path+'/'+ pickle_file
     pickle.dump(data, open(depthmap_save_path, "wb"))
-    
     pcd_target_path  = os.path.join(pcd_path,qrcode)
     pcd_complete_path = os.path.join(pcd_target_path,scantype)
     pathlib.Path(pcd_complete_path).mkdir(parents=True, exist_ok=True)
@@ -118,30 +118,22 @@ def process_RGB(rows):
 proc = multiprocessing.Pool()
 
 for index, row in full_dataset.iterrows():
-    process_data(row)
-    # proc.apply_async(process_pcd, [row]) 
+    # process_data(row)
+    proc.apply_async(process_data, [row]) 
     
 
-# for files in datas:
-#     # launch a process for each file (ish).
-#     # The result will be approximately one process per CPU core available.
-#     proc.apply_async(process_file, [files]) 
 
 proc.close()
 proc.join() # Wait for all child processes to close.
 
-for index, row in full_dataset.iterrows():
-    process_RGB(row)
-    # proc.apply_async(process_RGB, [row]) 
-    
+proc = multiprocessing.Pool()
 
-# for files in datas:
-#     # launch a process for each file (ish).
-#     # The result will be approximately one process per CPU core available.
-#     proc.apply_async(process_file, [files]) 
+for index, row in full_dataset.iterrows():
+    # process_RGB(row)
+    proc.apply_async(process_RGB, [row]) 
+    
 
 proc.close()
 proc.join()
-    
-# mount_context.stop() ## stop the mounting stream
+
 
