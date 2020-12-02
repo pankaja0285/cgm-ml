@@ -1,3 +1,5 @@
+import argparse
+from importlib import import_module
 import os
 import random
 import pickle
@@ -12,7 +14,16 @@ from azureml.core.run import Run
 
 import utils
 from constants import REPO_DIR
-from qa_config import MODEL_CONFIG, EVAL_CONFIG, DATA_CONFIG, RESULT_CONFIG
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--qa_config_module", default="qa_config_height", help="Configuration file")
+args = parser.parse_args()
+
+qa_config = import_module(args.qa_config_module)
+MODEL_CONFIG = qa_config.MODEL_CONFIG
+EVAL_CONFIG = qa_config.EVAL_CONFIG
+DATA_CONFIG = qa_config.DATA_CONFIG
+RESULT_CONFIG = qa_config.RESULT_CONFIG
 
 
 # Function for loading and processing depthmaps.
@@ -34,9 +45,9 @@ def tf_load_pickle(path, max_value):
     return depthmap, targets
 
 
-def get_height_prediction(MODEL_PATH, dataset_evaluation):
+def get_prediction(MODEL_PATH, dataset_evaluation):
     '''
-    Perform the height prediction on the dataset
+    Perform the prediction on the dataset with the given model
     Input:
         MODEL_PATH : Path of the trained model
         dataset_evaluation : dataset in which Evaluation
@@ -123,13 +134,13 @@ if __name__ == "__main__":
         model_path = f"{MODEL_CONFIG.INPUT_LOCATION}/{MODEL_CONFIG.NAME}"
     else:
         raise NameError(f"{MODEL_CONFIG.NAME}'s path extension not supported")
-    prediction_list_one = get_height_prediction(model_path, dataset_evaluation)
+    prediction_list_one = get_prediction(model_path, dataset_evaluation)
 
     print("Prediction made by model on the depthmaps...")
     print(prediction_list_one)
 
     qrcode_list, scantype_list, artifact_list, prediction_list, target_list = utils.get_column_list(
-        paths_evaluation, prediction_list_one)
+        paths_evaluation, prediction_list_one, DATA_CONFIG)
 
     df = pd.DataFrame({
         'qrcode': qrcode_list,
@@ -148,7 +159,7 @@ if __name__ == "__main__":
     MAE['error'] = MAE.apply(utils.avgerror, axis=1)
 
     print("Saving the results")
-    utils.calculate_and_save_results(MAE, EVAL_CONFIG.NAME, RESULT_CONFIG.SAVE_PATH)
+    utils.calculate_and_save_results(MAE, EVAL_CONFIG.NAME, RESULT_CONFIG.SAVE_PATH, DATA_CONFIG, RESULT_CONFIG)
 
     # Done.
     run.complete()
