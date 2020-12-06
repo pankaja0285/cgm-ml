@@ -1,0 +1,5 @@
+{
+    "subscription_id": "9b5bbfae-d5d1-4aae-a2ca-75159c0c887d",
+    "resource_group": "cgm-ml-prod-we-rg",
+    "workspace_name": "cgm-ml-prod-we-azml"
+}
