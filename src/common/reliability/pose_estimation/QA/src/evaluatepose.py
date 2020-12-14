@@ -110,11 +110,11 @@ if __name__ == "__main__":
     #set up the network with the prototype and model
     net = _init(proto, model)
 
-    #get POSE DETAILS
-    datasetTypeAndModel, BODY_PARTS, POSE_PAIRS = posepoints._setPoseDetails(datasetType)
+    #get POSE details
+    datasetTypeAndModel, body_parts, pose_pairs = posepoints._setPoseDetails(datasetType)
     
     #Add the other columns
-    df, columns = posepoints._addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df)
+    df, columns = posepoints._addColumnsToDataframe(body_parts, pose_pairs, df)
                 
     print('df.columns ', df.columns)
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         
         try:
             imagePath = rgb_files[i]
-            points = posepoints._poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
+            points = posepoints._poseEstimate(imagePath, net, body_parts, pose_pairs,
                         width=250, height=250)
             z = z+1
             

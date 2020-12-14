@@ -15,52 +15,52 @@ def _init(proto, model):
     return net
 
 def _setPoseDetails(datasetType):
-    BODY_PARTS = {}
-    POSE_PAIRS = []
+    body_parts = {}
+    pose_pairs = []
     defaultDatasetType = 'default-dataset'
 
     if datasetType == 'COCO':
-        BODY_PARTS = { "Nose": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
+        body_parts = { "Nose": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
                         "LShoulder": 5, "LElbow": 6, "LWrist": 7, "RHip": 8, "RKnee": 9,
                         "RAnkle": 10, "LHip": 11, "LKnee": 12, "LAnkle": 13, "REye": 14,
                         "LEye": 15, "REar": 16, "LEar": 17, "Background": 18 }
 
-        POSE_PAIRS = [ ["Neck", "RShoulder"], ["Neck", "LShoulder"], ["RShoulder", "RElbow"],
+        pose_pairs = [ ["Neck", "RShoulder"], ["Neck", "LShoulder"], ["RShoulder", "RElbow"],
                         ["RElbow", "RWrist"], ["LShoulder", "LElbow"], ["LElbow", "LWrist"],
                         ["Neck", "RHip"], ["RHip", "RKnee"], ["RKnee", "RAnkle"], ["Neck", "LHip"],
                         ["LHip", "LKnee"], ["LKnee", "LAnkle"], ["Neck", "Nose"], ["Nose", "REye"],
                         ["REye", "REar"], ["Nose", "LEye"], ["LEye", "LEar"] ]
     elif datasetType=='MPI':
-        BODY_PARTS = { "Head": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
+        body_parts = { "Head": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
                         "LShoulder": 5, "LElbow": 6, "LWrist": 7, "RHip": 8, "RKnee": 9,
                         "RAnkle": 10, "LHip": 11, "LKnee": 12, "LAnkle": 13, "Chest": 14,
                         "Background": 15 }
 
-        POSE_PAIRS = [ ["Head", "Neck"], ["Neck", "RShoulder"], ["RShoulder", "RElbow"],
+        pose_pairs = [ ["Head", "Neck"], ["Neck", "RShoulder"], ["RShoulder", "RElbow"],
                         ["RElbow", "RWrist"], ["Neck", "LShoulder"], ["LShoulder", "LElbow"],
                         ["LElbow", "LWrist"], ["Neck", "Chest"], ["Chest", "RHip"], ["RHip", "RKnee"],
                         ["RKnee", "RAnkle"], ["Chest", "LHip"], ["LHip", "LKnee"], ["LKnee", "LAnkle"] ]
     else:
         datasetType = defaultDatasetType
-        BODY_PARTS ={"Nose":0,"Neck":1,"RShoulder":2,"RElbow":3,"RWrist":4,"LShoulder":5,"LElbow":6,"LWrist":7,"MidHip":8,"RHip":9,"RKnee":10,"RAnkle":11,"LHip":12,"LKnee":13,"LAnkle":14,"REye":15,"LEye":16,"REar":17,"LEar":18,"LBigToe":19,"LSmallToe":20,"LHeel":21,"RBigToe":22,"RSmallToe":23,"RHeel":24,"Background":25}
+        body_parts ={"Nose":0,"Neck":1,"RShoulder":2,"RElbow":3,"RWrist":4,"LShoulder":5,"LElbow":6,"LWrist":7,"MidHip":8,"RHip":9,"RKnee":10,"RAnkle":11,"LHip":12,"LKnee":13,"LAnkle":14,"REye":15,"LEye":16,"REar":17,"LEar":18,"LBigToe":19,"LSmallToe":20,"LHeel":21,"RBigToe":22,"RSmallToe":23,"RHeel":24,"Background":25}
 
-        POSE_PAIRS =[ ["Neck","MidHip"],   ["Neck","RShoulder"],   ["Neck","LShoulder"],   ["RShoulder","RElbow"],   ["RElbow","RWrist"],   ["LShoulder","LElbow"],   ["LElbow","LWrist"],   ["MidHip","RHip"],   ["RHip","RKnee"],  ["RKnee","RAnkle"], ["MidHip","LHip"],  ["LHip","LKnee"], ["LKnee","LAnkle"],  ["Neck","Nose"],   ["Nose","REye"], ["REye","REar"],  ["Nose","LEye"], ["LEye","LEar"],   
+        pose_pairs =[ ["Neck","MidHip"],   ["Neck","RShoulder"],   ["Neck","LShoulder"],   ["RShoulder","RElbow"],   ["RElbow","RWrist"],   ["LShoulder","LElbow"],   ["LElbow","LWrist"],   ["MidHip","RHip"],   ["RHip","RKnee"],  ["RKnee","RAnkle"], ["MidHip","LHip"],  ["LHip","LKnee"], ["LKnee","LAnkle"],  ["Neck","Nose"],   ["Nose","REye"], ["REye","REar"],  ["Nose","LEye"], ["LEye","LEar"],   
     ["RShoulder","REar"],  ["LShoulder","LEar"],   ["LAnkle","LBigToe"],["LBigToe","LSmallToe"],["LAnkle","LHeel"], ["RAnkle","RBigToe"],["RBigToe","RSmallToe"],["RAnkle","RHeel"] ]
 
     datasetTypeAndModel = datasetType + '-caffemodel'
-    return datasetTypeAndModel, BODY_PARTS, POSE_PAIRS
+    return datasetTypeAndModel, body_parts, pose_pairs
 
-def _addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df):
+def _addColumnsToDataframe(body_parts, pose_pairs, df):
     pairCols = []
     
-    for i in range(len(POSE_PAIRS)):
-        partFrom = POSE_PAIRS[i][0]
-        partTo = POSE_PAIRS[i][1]
-        assert(partFrom in BODY_PARTS)
-        assert(partTo in BODY_PARTS)
+    for i in range(len(pose_pairs)):
+        partFrom = pose_pairs[i][0]
+        partTo = pose_pairs[i][1]
+        assert(partFrom in body_parts)
+        assert(partTo in body_parts)
 
-        idFrom = BODY_PARTS[partFrom]
-        idTo = BODY_PARTS[partTo]
+        idFrom = body_parts[partFrom]
+        idTo = body_parts[partTo]
         colname = "P"+str(idFrom)+str(idTo)
         pairCols.append(colname)
                 
@@ -69,7 +69,7 @@ def _addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df):
 
     return df, pairCols    
 
-def _poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
+def _poseEstimate(imagePath, net, body_parts, pose_pairs,
     threshold=0.1, width=368, height=368):
     
     points = []
@@ -91,7 +91,7 @@ def _poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
 
         print(f"time is {time.time()-start_t}")
 
-        for i in range(len(BODY_PARTS)):
+        for i in range(len(body_parts)):
             # Slice heatmap of corresponding body part.
             heatMap = out[0, i, :, :]
 
@@ -105,14 +105,14 @@ def _poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
             # Add a point if it's confidence is higher than threshold.
             pts.append((int(x), int(y)) if conf > threshold else None)
         
-        for pair in POSE_PAIRS:
+        for pair in pose_pairs:
             partFrom = pair[0]
             partTo = pair[1]
-            assert(partFrom in BODY_PARTS)
-            assert(partTo in BODY_PARTS)
+            assert(partFrom in body_parts)
+            assert(partTo in body_parts)
 
-            idFrom = BODY_PARTS[partFrom]
-            idTo = BODY_PARTS[partTo]
+            idFrom = body_parts[partFrom]
+            idTo = body_parts[partTo]
             if pts[idFrom] and pts[idTo]:
                 #so we keep the points (belonging to pairs together)
                 currSetofPoints = [pts[idFrom], pts[idTo]]

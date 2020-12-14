@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from IPython.display import display
 
-def _poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeAndModel,
+def _poseEstimationFromModelAndDataset(net, body_parts, pose_pairs, datasetTypeAndModel,
  imagePath, imageFilename, getTitleboxAndResizeFrame,
  threshold=0.1, width=368, height=368, writeImage=False):
 
@@ -25,10 +25,10 @@ def _poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeA
     out = net.forward()
 
     print("time is ",time.time()-start_t)
-    #assert(len(BODY_PARTS) == out.shape[1])
+    #assert(len(body_parts) == out.shape[1])
 
     points = []
-    for i in range(len(BODY_PARTS)):
+    for i in range(len(body_parts)):
         # Slice heatmap of corresponding body part.
         heatMap = out[0, i, :, :]
 
@@ -42,14 +42,14 @@ def _poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeA
         # Add a point if it's confidence is higher than threshold.
         points.append((int(x), int(y)) if conf > threshold else None)
         
-    for pair in POSE_PAIRS:
+    for pair in pose_pairs:
         partFrom = pair[0]
         partTo = pair[1]
-        assert(partFrom in BODY_PARTS)
-        assert(partTo in BODY_PARTS)
+        assert(partFrom in body_parts)
+        assert(partTo in body_parts)
 
-        idFrom = BODY_PARTS[partFrom]
-        idTo = BODY_PARTS[partTo]
+        idFrom = body_parts[partFrom]
+        idTo = body_parts[partTo]
         if points[idFrom] and points[idTo]:
             cv2.line(frame, points[idFrom], points[idTo], (255, 74, 0), 3)
             cv2.ellipse(frame, points[idFrom], (4, 4), 0, 0, 360, (255, 255, 255), cv2.FILLED)
@@ -75,9 +75,7 @@ def _poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeA
             os.makedirs('output', mode=0o777, exist_ok=False)
         # write the file
         res = cv2.imwrite(f"./output/{impath}", imframe)
-        #print('result at idx, res, sourcefile - ', impath, 
-        #  res, imagePath)
-
+        
     #display image
     plt.figure()
     img = cv2.cvtColor(imframe, cv2.COLOR_BGR2RGB) # Converting BGR to RGB
