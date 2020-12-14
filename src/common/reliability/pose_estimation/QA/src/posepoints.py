@@ -6,7 +6,7 @@ import os,sys,inspect
 import matplotlib.pyplot as plt
 from PIL import Image
 
-def init(proto, model):
+def _init(proto, model):
     global net
     print('proto ', proto)
     
@@ -14,7 +14,7 @@ def init(proto, model):
     print('cv2 dnn readNetFromCaffe')
     return net
 
-def setPoseDetails(datasetType):
+def _setPoseDetails(datasetType):
     BODY_PARTS = {}
     POSE_PAIRS = []
     defaultDatasetType = 'default-dataset'
@@ -50,7 +50,7 @@ def setPoseDetails(datasetType):
     datasetTypeAndModel = datasetType + '-caffemodel'
     return datasetTypeAndModel, BODY_PARTS, POSE_PAIRS
 
-def addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df):
+def _addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df):
     pairCols = []
     
     for i in range(len(POSE_PAIRS)):
@@ -64,12 +64,12 @@ def addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df):
         colname = "P"+str(idFrom)+str(idTo)
         pairCols.append(colname)
                 
-    #df = df.reindex(columns = df.columns.tolist() + pairCols) 
+    #add other columns to the dataframe 
     df = pd.DataFrame(columns = df.columns.tolist() + pairCols)
 
     return df, pairCols    
 
-def poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
+def _poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
     threshold=0.1, width=368, height=368):
     
     points = []
@@ -86,10 +86,10 @@ def poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
         inp = cv2.dnn.blobFromImage(frame, 1.0 / 255, (width, height),
                                     (0, 0, 0), swapRB=False, crop=False)
         net.setInput(inp)
-        #start_t = time.time()
+        #do the forward-pass
         out = net.forward()
 
-        print("time is ",time.time()-start_t)
+        print(f"time is {time.time()-start_t}")
 
         for i in range(len(BODY_PARTS)):
             # Slice heatmap of corresponding body part.
@@ -140,8 +140,7 @@ def poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
             append_write = 'w' # create a new file if not
 
         expwrite = open(filename,append_write)
-        expwrite.write("File: " + imagePath + '\n')
+        expwrite.write(f"File: {imagePath}\n")
         expwrite.close() 
     return points
-
-    
+   

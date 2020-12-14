@@ -6,11 +6,9 @@ class dotdict(dict):
 
 EVAL_CONFIG = dotdict(dict(
     #Name of evaluation
-    #NAME='q3-depthmap-plaincnn-height-100-95k-run_17',
     NAME='rgbtrain-poseest-95k-run_1',
     
     #Experiment in Azure ML which will be used for evaluation
-    #EXPERIMENT_NAME="QA-pipeline",
     EXPERIMENT_NAME="anonrgbtrain_poseestimation_ps",
     CLUSTER_NAME="gpu-cluster",
 
@@ -58,14 +56,9 @@ DATA_CONFIG = dotdict(dict(
 
 ))
 
-
 #Result configuration for result generation after evaluation is done
 RESULT_CONFIG = dotdict(dict(
-    # Error margin on various ranges
-    #ACCURACIES=[.2, .4, .6, 1, 1.2, 2., 2.5, 3., 4., 5., 6.],
-    #COLUMNS=['qrcode', 'artifact', 'scantype', 'GT'],
     COLUMNS=['artifact'],
     #path of csv file in the experiment which final result is stored
-    #SAVE_PATH='./outputs/result.csv',
     SAVE_PATH='outputs/',
 ))

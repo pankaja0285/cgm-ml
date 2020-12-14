@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from IPython.display import display
 
-def poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeAndModel,
+def _poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeAndModel,
  imagePath, imageFilename, getTitleboxAndResizeFrame,
  threshold=0.1, width=368, height=368, writeImage=False):
 
@@ -68,15 +68,15 @@ def poseEstimationFromModelAndDataset(net, BODY_PARTS, POSE_PAIRS, datasetTypeAn
     # vconcat for combining the titlebox and frameWBorder
     imframe = cv2.vconcat((titlebox, frameWBorder))
     # set Pose Estimation file name for imwrite
-    impath = 'PoseEst-' + imageFilename 
+    impath = f"PoseEst-{imageFilename}" 
     if (writeImage == True):
         #create folder if need be
         if not os.path.exists('output'):
             os.makedirs('output', mode=0o777, exist_ok=False)
         # write the file
-        res = cv2.imwrite(f'./output/'+impath, imframe)
-        print('result at idx, res, sourcefile - ', impath, 
-          res, imagePath)
+        res = cv2.imwrite(f"./output/{impath}", imframe)
+        #print('result at idx, res, sourcefile - ', impath, 
+        #  res, imagePath)
 
     #display image
     plt.figure()

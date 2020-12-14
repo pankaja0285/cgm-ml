@@ -20,7 +20,7 @@ import posepoints
 from constants import REPO_DIR
 from config import EVAL_CONFIG, DATA_CONFIG, RESULT_CONFIG
 
-def init(proto, model):
+def _init(proto, model):
     global net
     print('proto ', proto)
     
@@ -73,10 +73,7 @@ if __name__ == "__main__":
     if EVAL_CONFIG.DEBUG_RUN and len(qrcode_paths) > EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN:
         qrcode_paths = qrcode_paths[:EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN]
         print("Executing on {} qrcodes for FAST RUN".format(EVAL_CONFIG.DEBUG_NUMBER_OF_SCAN))
-
-    #print("Paths for pose estimation:")
-    #print("\t" + "\n\t".join(qrcode_paths))
-    
+        
     # Shuffle and take approximately 1/6ths of the data for pose estimation
     random.shuffle(qrcode_paths)
     split_index = int(len(qrcode_paths) * 0.17)
@@ -86,13 +83,13 @@ if __name__ == "__main__":
 
     # Get the RGBs.
     print("Getting RGB paths...")
-    rgb_files = utils.get_rgb_files(qrcode_paths_poseest)
+    rgb_files = utils._get_rgb_files(qrcode_paths_poseest)
     del qrcode_paths
     del qrcode_paths_poseest
 
     print("Using {} rgb files for pose estimation.".format(len(rgb_files)))
 
-    qrcode_list, artifact_list = utils.get_column_list(rgb_files)
+    qrcode_list, artifact_list = utils._get_column_list(rgb_files)
         
     numscanFiles = DATA_CONFIG.NUM_SCANFILES
     if (numscanFiles == 0):
@@ -108,14 +105,16 @@ if __name__ == "__main__":
     datasetType = DATA_CONFIG.DATASETTYPE_PATH
     print('proto ', proto)
     print('model ', model)
-    print('datasetType ', datasetType)
-    net = init(proto, model)
+    print(f"datasetType {datasetType}")
+
+    #set up the network with the prototype and model
+    net = _init(proto, model)
 
     #get POSE DETAILS
-    datasetTypeAndModel, BODY_PARTS, POSE_PAIRS = posepoints.setPoseDetails(datasetType)
+    datasetTypeAndModel, BODY_PARTS, POSE_PAIRS = posepoints._setPoseDetails(datasetType)
     
     #Add the other columns
-    df, columns = posepoints.addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df)
+    df, columns = posepoints._addColumnsToDataframe(BODY_PARTS, POSE_PAIRS, df)
                 
     print('df.columns ', df.columns)
 
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     
     artifacts = []
     for j in range(numscanFiles):
-        artifact = utils.getFilename(rgb_files[j])
+        artifact = utils._getFilename(rgb_files[j])
         artifacts.append(artifact)
 
     errors = []
@@ -140,7 +139,7 @@ if __name__ == "__main__":
         
         try:
             imagePath = rgb_files[i]
-            points = posepoints.poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
+            points = posepoints._poseEstimate(imagePath, net, BODY_PARTS, POSE_PAIRS,
                         width=250, height=250)
             z = z+1
             
@@ -168,7 +167,7 @@ if __name__ == "__main__":
         if not os.path.exists('outputs'):
             os.makedirs('outputs', mode=0o777, exist_ok=False)
         # write the file
-        dfErrors.to_json(f'outputs/'+ errpath, index=True)
+        dfErrors.to_json(f"outputs/{errpath}", index=True)
     
     processedlen = numfiles - notProcesslen
     print(f"Total time for {processedlen} scans, pose estimation is {time.time()-start_t}.")
@@ -176,12 +175,12 @@ if __name__ == "__main__":
     print(df.head())
     print('df.shape', df.shape)
     #save pose estimation results to file
-    #OUTFILE_PATH = EVAL_CONFIG.EXPERIMENT_NAME + "_posepoints.csv"
+    #OUTFILE_PATH = f"{EVAL_CONFIG.EXPERIMENT_NAME}_posepoints.csv"
     #df.to_csv(f'outputs/'+ OUTFILE_PATH, index=True)
     
     #write as json, instead, easy to read
-    OUTFILE_PATH = EVAL_CONFIG.EXPERIMENT_NAME + "_posepoints.json"
-    df.to_json(f'outputs/'+ OUTFILE_PATH, index=True, indent=4)
+    OUTFILE_PATH = f"{EVAL_CONFIG.EXPERIMENT_NAME}_posepoints.json"
+    df.to_json(f"outputs/{OUTFILE_PATH}", index=True, indent=4)
 
     # Done.
     run.complete()
