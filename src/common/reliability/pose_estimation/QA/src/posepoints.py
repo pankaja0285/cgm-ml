@@ -47,8 +47,8 @@ def _setPoseDetails(datasetType):
         pose_pairs =[ ["Neck","MidHip"],   ["Neck","RShoulder"],   ["Neck","LShoulder"],   ["RShoulder","RElbow"],   ["RElbow","RWrist"],   ["LShoulder","LElbow"],   ["LElbow","LWrist"],   ["MidHip","RHip"],   ["RHip","RKnee"],  ["RKnee","RAnkle"], ["MidHip","LHip"],  ["LHip","LKnee"], ["LKnee","LAnkle"],  ["Neck","Nose"],   ["Nose","REye"], ["REye","REar"],  ["Nose","LEye"], ["LEye","LEar"],   
     ["RShoulder","REar"],  ["LShoulder","LEar"],   ["LAnkle","LBigToe"],["LBigToe","LSmallToe"],["LAnkle","LHeel"], ["RAnkle","RBigToe"],["RBigToe","RSmallToe"],["RAnkle","RHeel"] ]
 
-    datasetTypeAndModel = datasetType + '-caffemodel'
-    return datasetTypeAndModel, body_parts, pose_pairs
+    dataset_type_and_model = datasetType + '-caffemodel'
+    return dataset_type_and_model, body_parts, pose_pairs
 
 def _addColumnsToDataframe(body_parts, pose_pairs, df):
     pairCols = []
@@ -131,7 +131,7 @@ def _poseEstimate(imagePath, net, body_parts, pose_pairs,
                 #append [] if no pose points estimated
                 points.append([])
                 
-    except:
+    except Exception:
         filename = 'outputs/notprocessed.txt'
 
         if os.path.exists(filename):

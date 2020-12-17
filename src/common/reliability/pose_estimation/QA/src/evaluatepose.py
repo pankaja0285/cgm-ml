@@ -1,22 +1,15 @@
 import cv2 
-import numpy as np
 import pandas as pd
 import time
-import os,sys,inspect
-import matplotlib.pyplot as plt
-
+import os
+import sys
 import random
-import pickle
 import glob2 as glob
 import tensorflow as tf
-from tensorflow.keras.models import load_model
-
 from azureml.core import Experiment, Workspace
 from azureml.core.run import Run
-
 import utils
 import posepoints
-
 from constants import REPO_DIR
 from config import EVAL_CONFIG, DATA_CONFIG, RESULT_CONFIG
 
@@ -80,7 +73,6 @@ if __name__ == "__main__":
     qrcode_paths_poseest = qrcode_paths[:split_index]
     print('qrcode_paths_poseest len- ', len(qrcode_paths_poseest))
     
-
     # Get the RGBs.
     print("Getting RGB paths...")
     rgb_files = utils._get_rgb_files(qrcode_paths_poseest)
@@ -96,9 +88,7 @@ if __name__ == "__main__":
         numscanFiles = len(rgb_files)
     print('numscanFiles - ', numscanFiles)
 
-    df = pd.DataFrame({
-            'artifact': '' 
-    }, index=[1], columns=RESULT_CONFIG.COLUMNS)
+    df = pd.DataFrame({'artifact': ''}, index=[1], columns=RESULT_CONFIG.COLUMNS)
     
     proto = DATA_CONFIG.PROTOTXT_PATH
     model = DATA_CONFIG.MODELTYPE_PATH
@@ -132,7 +122,7 @@ if __name__ == "__main__":
     errors = []
     notProcessed = []
     processedlen = 0
-    
+    start_t = time.time()
     for i in range(numscanFiles):
         artifact = artifact[i]
         points = None
@@ -140,7 +130,7 @@ if __name__ == "__main__":
         try:
             imagePath = rgb_files[i]
             points = posepoints._poseEstimate(imagePath, net, body_parts, pose_pairs,
-                        width=250, height=250)
+                        width = 250, height = 250)
             z = z+1
             
             #set artifact name
@@ -148,7 +138,8 @@ if __name__ == "__main__":
             
             for key,value in zip(columns, points):
                 df.loc[z, key]= value
-        except:
+
+        except Exception:
             e = sys.exc_info()[0]
             errors.append(e)
             notProcessed.append(artifact)
@@ -169,7 +160,7 @@ if __name__ == "__main__":
         # write the file
         dfErrors.to_json(f"outputs/{errpath}", index=True)
     
-    processedlen = numfiles - notProcesslen
+    processedlen = numscanFiles - notProcesslen
     print(f"Total time for {processedlen} scans, pose estimation is {time.time()-start_t}.")
 
     print(df.head())

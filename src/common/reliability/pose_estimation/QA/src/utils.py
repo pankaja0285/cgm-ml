@@ -1,11 +1,6 @@
 import os
-import pickle
-
 import glob2 as glob
 import numpy as np
-import pandas as pd
-
-from config import DATA_CONFIG, RESULT_CONFIG
 
 def _getFilename(imPath):
     fName = ''
@@ -21,7 +16,6 @@ def _get_rgb_files(paths):
     for path in paths:
         rgb_paths.extend(glob.glob(os.path.join(path, "**", "*.jpg")))
     return rgb_paths
-
 
 def _get_column_list(rgb_path_list):
     '''
