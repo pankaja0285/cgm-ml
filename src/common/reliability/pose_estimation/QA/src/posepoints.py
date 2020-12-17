@@ -69,9 +69,7 @@ def _addColumnsToDataframe(body_parts, pose_pairs, df):
 
     return df, pairCols    
 
-def _poseEstimate(imagePath, net, body_parts, pose_pairs,
-    threshold=0.1, width=368, height=368):
-    
+def _poseEstimate(imagePath, net, body_parts, pose_pairs, threshold=0.1, width=368, height=368):
     points = []
     start_t = time.time()
     
@@ -135,12 +133,11 @@ def _poseEstimate(imagePath, net, body_parts, pose_pairs,
         filename = 'outputs/notprocessed.txt'
 
         if os.path.exists(filename):
-            append_write = 'a' # append if already exists
+            append_write = 'a' 
         else:
-            append_write = 'w' # create a new file if not
+            append_write = 'w' 
 
-        expwrite = open(filename,append_write)
+        expwrite = open(filename, append_write)
         expwrite.write(f"File: {imagePath}\n")
         expwrite.close() 
     return points
-   
