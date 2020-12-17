@@ -13,12 +13,11 @@ import posepoints
 from constants import REPO_DIR
 from config import EVAL_CONFIG, DATA_CONFIG, RESULT_CONFIG
 
+
 def _init(proto, model):
     global net
     print('proto ', proto)
-    
     net = cv2.dnn.readNetFromCaffe(proto, model)
-    print('cv2 dnn readNetFromCaffe')
     return net
 
 if __name__ == "__main__":
@@ -57,7 +56,6 @@ if __name__ == "__main__":
     # Get the QR-code paths.
     dataset_path = os.path.join(dataset_path, "scans")
     print("Dataset path:", dataset_path)
-    #print(glob.glob(os.path.join(dataset_path, "*"))) # Debug
     print("Getting QR code paths...")
     qrcode_paths = glob.glob(os.path.join(dataset_path, "*"))
     print("QR code paths: ", len(qrcode_paths))
@@ -97,20 +95,20 @@ if __name__ == "__main__":
     print('model ', model)
     print(f"datasetType {datasetType}")
 
-    #set up the network with the prototype and model
+    # set up the network with the prototype and model
     net = _init(proto, model)
 
-    #get POSE details
-    datasetTypeAndModel, body_parts, pose_pairs = posepoints._setPoseDetails(datasetType)
+    # get POSE details
+    dataset_type_and_model, body_parts, pose_pairs = posepoints._setPoseDetails(datasetType)
     
-    #Add the other columns
+    # Add the other columns
     df, columns = posepoints._addColumnsToDataframe(body_parts, pose_pairs, df)
                 
     print('df.columns ', df.columns)
 
-    #pose estimation points
+    # pose estimation points
     z = 0
-    #df.drop(df.index, inplace=True)
+    # dataframe
     df = pd.DataFrame(columns=df.columns)
     df.set_index('artifact')
     
@@ -130,10 +128,10 @@ if __name__ == "__main__":
         try:
             imagePath = rgb_files[i]
             points = posepoints._poseEstimate(imagePath, net, body_parts, pose_pairs,
-                        width = 250, height = 250)
+                       width=250, height=250)
             z = z+1
             
-            #set artifact name
+            # set artifact name
             df.loc[z, "artifact"] = artifact
             
             for key,value in zip(columns, points):
@@ -154,7 +152,7 @@ if __name__ == "__main__":
         print(f"Not processed {notProcesslen} scans, for feature extraction.")
         errpath = "dfRgbPoseEst_errors.json"
 
-        #create folder if need be
+        # create folder if need be
         if not os.path.exists('outputs'):
             os.makedirs('outputs', mode=0o777, exist_ok=False)
         # write the file
@@ -165,11 +163,11 @@ if __name__ == "__main__":
 
     print(df.head())
     print('df.shape', df.shape)
-    #save pose estimation results to file
-    #OUTFILE_PATH = f"{EVAL_CONFIG.EXPERIMENT_NAME}_posepoints.csv"
-    #df.to_csv(f'outputs/'+ OUTFILE_PATH, index=True)
+    # save pose estimation results to file
+    # OUTFILE_PATH = f"{EVAL_CONFIG.EXPERIMENT_NAME}_posepoints.csv"
+    # df.to_csv(f'outputs/'+ OUTFILE_PATH, index=True)
     
-    #write as json, instead, easy to read
+    # write as json, instead, easy to read
     OUTFILE_PATH = f"{EVAL_CONFIG.EXPERIMENT_NAME}_posepoints.json"
     df.to_json(f"outputs/{OUTFILE_PATH}", index=True, indent=4)
 

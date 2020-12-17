@@ -1,6 +1,6 @@
 import os
 import glob2 as glob
-import numpy as np
+
 
 def _getFilename(imPath):
     fName = ''

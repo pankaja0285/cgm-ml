@@ -1,9 +1,10 @@
-import cv2 
+import cv2
 import time
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
 from IPython.display import display
+
 
 def _poseEstimationFromModelAndDataset(net, body_parts, pose_pairs, dataset_type_and_model,
  imagePath, imageFilename, getTitleboxAndResizeFrame,
@@ -11,19 +12,19 @@ def _poseEstimationFromModelAndDataset(net, body_parts, pose_pairs, dataset_type
 
     imgRead = cv2.imread(imagePath)
     frame = cv2.rotate(imgRead, cv2.cv2.ROTATE_90_CLOCKWISE)
-    #print('imageFilename: ', imageFilename)
+    # print('imageFilename: ', imageFilename)
 
     frameWidth = frame.shape[1]
     frameHeight = frame.shape[0]
 
     inp = cv2.dnn.blobFromImage(frame, 1.0 / 255, (width, height),
-            (0, 0, 0), swapRB = False, crop = False)
+            (0, 0, 0), swapRB=False, crop=False)
     net.setInput(inp)
     start_t = time.time()
     out = net.forward()
 
-    print("time is ",time.time() - start_t)
-    #assert(len(body_parts) == out.shape[1])
+    print(f"time is {time.time() - start_t}")
+    # assert(len(body_parts) == out.shape[1])
 
     points = []
     for i in range(len(body_parts)):
@@ -38,7 +39,7 @@ def _poseEstimationFromModelAndDataset(net, body_parts, pose_pairs, dataset_type
         y = (frameHeight * point[1]) / out.shape[2]
 
         # Add a point if it's confidence is higher than threshold.
-        points.append((int(x), int(y)) if conf > threshold else None)
+        points.append((int(x), int(y)) if conf>threshold else None)
         
     for pair in pose_pairs:
         partFrom = pair[0]
@@ -61,23 +62,23 @@ def _poseEstimationFromModelAndDataset(net, body_parts, pose_pairs, dataset_type
 
     # set up titlebox to show some description etc. of the result
     # and also modify the outer edge dims of the frame
-    frameWBorder, titlebox = getTitleboxAndResizeFrame(frame, 
-                                imageFilename, additionalTitleText = dataset_type_and_model)
+    frameWBorder, titlebox = getTitleboxAndResizeFrame(frame, imageFilename, 
+                              additionalTitleText=dataset_type_and_model)
     # vconcat for combining the titlebox and frameWBorder
     imframe = cv2.vconcat((titlebox, frameWBorder))
     # set Pose Estimation file name for imwrite
     impath = f"PoseEst-{imageFilename}" 
     if (writeImage == True):
         #create folder if need be
-        if (os.path.exists('output') == False):
-            os.makedirs('output', mode = 0o777, exist_ok=False)
+        if not (os.path.exists('output')):
+            os.makedirs('output', mode=0o777, exist_ok=False)
         # write the file
         cv2.imwrite(f"./output/{impath}", imframe)
         
-    #display image
+    # display image
     plt.figure()
-    img = cv2.cvtColor(imframe, cv2.COLOR_BGR2RGB) # Converting BGR to RGB
+    # Converting BGR to RGB
+    img = cv2.cvtColor(imframe, cv2.COLOR_BGR2RGB) 
     display(Image.fromarray(img))
     
     return points
-

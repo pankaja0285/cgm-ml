@@ -1,10 +1,8 @@
 import cv2 
-import numpy as np
 import pandas as pd
 import time
-import os,sys,inspect
-import matplotlib.pyplot as plt
-from PIL import Image
+import os
+
 
 def _init(proto, model):
     global net
@@ -64,7 +62,7 @@ def _addColumnsToDataframe(body_parts, pose_pairs, df):
         colname = "P"+str(idFrom)+str(idTo)
         pairCols.append(colname)
                 
-    #add other columns to the dataframe 
+    # add other columns to the dataframe 
     df = pd.DataFrame(columns = df.columns.tolist() + pairCols)
 
     return df, pairCols    
@@ -74,7 +72,7 @@ def _poseEstimate(imagePath, net, body_parts, pose_pairs, threshold=0.1, width=3
     start_t = time.time()
     
     try:
-        #print('imagePath - ', imagePath)
+        # print('imagePath - ', imagePath)
         imgRead = cv2.imread(imagePath)
         frame = cv2.rotate(imgRead, cv2.cv2.ROTATE_90_CLOCKWISE)
         pts = []
@@ -84,7 +82,7 @@ def _poseEstimate(imagePath, net, body_parts, pose_pairs, threshold=0.1, width=3
         inp = cv2.dnn.blobFromImage(frame, 1.0 / 255, (width, height),
                                     (0, 0, 0), swapRB=False, crop=False)
         net.setInput(inp)
-        #do the forward-pass
+        # do the forward-pass
         out = net.forward()
 
         print(f"time is {time.time()-start_t}")
@@ -112,21 +110,21 @@ def _poseEstimate(imagePath, net, body_parts, pose_pairs, threshold=0.1, width=3
             idFrom = body_parts[partFrom]
             idTo = body_parts[partTo]
             if pts[idFrom] and pts[idTo]:
-                #so we keep the points (belonging to pairs together)
+                # so we keep the points (belonging to pairs together)
                 currSetofPoints = [pts[idFrom], pts[idTo]]
 
-                #NOTE: uncomment for DEBUG purposes
-                #print('currSetofPoints for ', idFrom, idTo)
-                #print('currSetofPoints ', currSetofPoints)
+                # NOTE: uncomment for DEBUG purposes
+                # print('currSetofPoints for ', idFrom, idTo)
+                # print('currSetofPoints ', currSetofPoints)
 
                 points.append(currSetofPoints)
-                #print('points ', points)
+                # print('points ', points)
                                 
                 # the last pairs, are
                 # - right ankle to right big toe 
                 # - left ankle to left big toe
             else:
-                #append [] if no pose points estimated
+                # append [] if no pose points estimated
                 points.append([])
                 
     except Exception:

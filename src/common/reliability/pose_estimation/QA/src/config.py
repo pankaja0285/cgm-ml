@@ -5,26 +5,25 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
 EVAL_CONFIG = dotdict(dict(
-    #Name of evaluation
+    # Name of evaluation
     NAME='rgbtrain-poseest-95k-run_1',
     
-    #Experiment in Azure ML which will be used for evaluation
+    # Experiment in Azure ML which will be used for evaluation
     EXPERIMENT_NAME="anonrgbtrain_poseestimation_ps",
     CLUSTER_NAME="gpu-cluster",
 
-    #Used for Debug the QA pipeline
+    # Used for Debug the QA pipeline
     DEBUG_RUN=False,
     #DEBUG_RUN = True,
 
-    #Will run eval on specified # of scan instead of full dataset
+    # Will run eval on specified # of scan instead of full dataset
     DEBUG_NUMBER_OF_SCAN=50,
-
     SPLIT_SEED=0,
 ))
 
-#Details of Evaluation Dataset
+# Details of Evaluation Dataset
 DATA_CONFIG = dotdict(dict(
-    #Name of training dataset
+    # Name of training dataset
     NAME='anon_rgb_training',
         
     IMAGE_TARGET_HEIGHT=240,
@@ -37,8 +36,10 @@ DATA_CONFIG = dotdict(dict(
     # Parameters for dataset generation.
     TARGET_INDEXES=[0],  # 0 is height, 1 is weight.
 
-    #NUM_SCANFILES = 4, # process one file for testing
-    NUM_SCANFILES = 0, # meaning process all files
+    # process sample number of files for testing
+    # NUM_SCANFILES = 4,
+    # 0 meaning process all files
+    NUM_SCANFILES=0, 
     
     CODE_TO_SCANTYPE={
         '100': '_front',
@@ -48,17 +49,16 @@ DATA_CONFIG = dotdict(dict(
         '201': '_lyingrot',
         '202': '_lyingback',
     },
-    POSEROOT_PATH = 'pose',
-    POSETYPE_PATH = 'coco',
-    PROTOTXT_PATH = 'deploy_coco.prototxt',
-    MODELTYPE_PATH = 'pose_iter_440000.caffemodel',
-    DATASETTYPE_PATH = 'COCO'
-
+    POSEROOT_PATH='pose',
+    POSETYPE_PATH='coco',
+    PROTOTXT_PATH='deploy_coco.prototxt',
+    MODELTYPE_PATH='pose_iter_440000.caffemodel',
+    DATASETTYPE_PATH='COCO'
 ))
 
-#Result configuration for result generation after evaluation is done
+# Result configuration for result generation after evaluation is done
 RESULT_CONFIG = dotdict(dict(
     COLUMNS=['artifact'],
-    #path of csv file in the experiment which final result is stored
-    SAVE_PATH='outputs/',
+    # path of csv file in the experiment which final result is stored
+    SAVE_PATH='outputs/'
 ))
